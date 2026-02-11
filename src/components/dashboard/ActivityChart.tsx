@@ -24,10 +24,11 @@ export function ActivityChart() {
         ? ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
         : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-    // Group leads by month
+    // Group signed leads by month
     const currentYear = new Date().getFullYear()
     const leadCounts = monthNames.map((name, index) => {
         const count = leads.filter(lead => {
+            if (lead.status !== 'signed') return false
             if (!lead.entryDate) return false
             const d = new Date(lead.entryDate)
             return d.getFullYear() === currentYear && d.getMonth() === index

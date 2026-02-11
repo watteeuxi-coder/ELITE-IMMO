@@ -167,7 +167,8 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         const tempLead = { ...activeLead, ...leadUpdates }
                         const finalScore = calculateScore(tempLead)
                         leadUpdates.aiScore = finalScore
-                        leadUpdates.status = 'qualified'
+                        // Only set to 'qualified' if score >= 80
+                        leadUpdates.status = finalScore >= 80 ? 'qualified' : 'new'
                         aiResponse = t('chat_complete').replace('{score}', finalScore.toString()) + " " + (finalScore >= 80 ? t('chat_complete_high') : t('chat_complete_low'))
                         nextStep = 'complete'
                     }

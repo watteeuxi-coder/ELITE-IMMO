@@ -4,15 +4,17 @@ import React, { useState, useEffect } from 'react'
 import { useStore, Lead } from '../../store/useStore'
 import { ChatWindow } from '../../components/chat/ChatWindow'
 import { cn } from '../../lib/utils'
-import { Search, Filter, Plus, Trash2 } from 'lucide-react'
+import { Search, Filter, Plus, Trash2, User } from 'lucide-react'
 import { useLanguage } from '../../i18n/LanguageContext'
+import { useSearchParams } from 'next/navigation'
 
 export default function LeadsPage() {
     const { leads, addLead, deleteLead, fetchLeads, isLoading } = useStore()
     const { t } = useLanguage()
+    const searchParams = useSearchParams()
     const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>()
     const [searchTerm, setSearchTerm] = useState('')
-    const [filterOnlyQualified, setFilterOnlyQualified] = useState(false)
+    const [filterOnlyQualified, setFilterOnlyQualified] = useState(searchParams.get('qualified') === 'true')
 
     useEffect(() => {
         fetchLeads()
@@ -36,7 +38,7 @@ export default function LeadsPage() {
 
     const filteredLeads = leads
         .filter((lead: Lead) => lead.name.toLowerCase().includes(searchTerm.toLowerCase()))
-        .filter((lead: Lead) => filterOnlyQualified ? lead.aiScore > 80 : true)
+        .filter((lead: Lead) => filterOnlyQualified ? lead.aiScore >= 80 : true)
 
     const activeLead = leads.find((l: Lead) => l.id === selectedLeadId) || filteredLeads[0]
 
