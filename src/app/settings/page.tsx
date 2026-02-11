@@ -61,7 +61,7 @@ export default function SettingsPage() {
             </button>
 
             {/* Admin Reset Section (Conditional) */}
-            {(process.env.NEXT_PUBLIC_SHOW_ADMIN_TOOLS === 'true' || process.env.NODE_ENV === 'development') && (
+            {(process.env.NEXT_PUBLIC_SHOW_ADMIN_TOOLS === 'true' || process.env.NODE_ENV !== 'production') && (
                 <div className="mt-12 pt-8 border-t border-red-100 space-y-6">
                     <div className="p-8 bg-red-50/50 border-2 border-red-100 rounded-3xl space-y-6">
                         <div className="flex items-center gap-3 text-red-600">
