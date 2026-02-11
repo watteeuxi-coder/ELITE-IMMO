@@ -15,7 +15,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     if (isStandalone) {
         return (
             <main className="min-h-screen w-full relative">
-                <LanguageSelector className="fixed top-4 right-4 z-[100]" />
+                <div className="fixed top-4 right-4 z-[100] scale-90 md:scale-100">
+                    <LanguageSelector />
+                </div>
                 {children}
             </main>
         )

@@ -136,6 +136,9 @@ const translations: Record<Language, Record<string, string>> = {
         chat_income_nice: "C'est noté : {income}€/mois. Quel est votre type de contrat de travail ? (CDI, CDD, Freelance...)",
         chat_contract_ask: "Très bien. Possédez-vous un garant physique ou une garantie de type Visale ?",
         chat_entry_ask: "Parfait. Dernière question : à partir de quelle date souhaiteriez-vous emménager ?",
+        chat_dossier_title: "Candidature Locataire",
+        chat_dossier_subtitle: "Votre dossier en 3 minutes",
+        chat_dossier_footer: "Propulsé par Elite-Immo © 2026",
 
         // Common
         common_new: "Nouveau",
@@ -281,6 +284,9 @@ const translations: Record<Language, Record<string, string>> = {
         chat_income_nice: "Noted: {income}€/month. What is your employment contract type? (Permanent, Fixed-term, Freelance...)",
         chat_contract_ask: "Very well. Do you have a physical guarantor or a Visale type guarantee?",
         chat_entry_ask: "Perfect. Last question: from what date would you like to move in?",
+        chat_dossier_title: "Tenant Application",
+        chat_dossier_subtitle: "Your file in 3 minutes",
+        chat_dossier_footer: "Powered by Elite-Immo © 2026",
 
         // Settings
         settings_title: "Settings",

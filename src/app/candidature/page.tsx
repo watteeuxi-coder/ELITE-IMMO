@@ -31,27 +31,27 @@ export default function CandidaturePage() {
     }, [currentLeadId, addLead, setActiveLead])
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-[#E0E7FF] via-white to-[#F8FAFC] flex flex-col">
+        <div className="min-h-screen w-full bg-gradient-to-br from-[#E0E7FF] via-white to-[#F8FAFC] flex flex-col relative">
             {/* Minimalist Header */}
-            <div className="w-full py-6 px-4 md:px-8 flex items-center justify-center">
-                <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#7084FF] to-[#9D4EDD] flex items-center justify-center shadow-lg shadow-primary/20">
-                        <Sparkles className="w-7 h-7 text-white" />
+            <div className="w-full py-6 md:py-10 px-4 md:px-8 flex flex-col items-center justify-center gap-6">
+                <div className="flex flex-col md:flex-row items-center gap-4 text-center md:text-left">
+                    <div className="w-14 h-14 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#7084FF] to-[#9D4EDD] flex items-center justify-center shadow-xl shadow-primary/20">
+                        <Sparkles className="w-8 h-8 md:w-7 md:h-7 text-white" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold bg-gradient-to-r from-[#7084FF] to-[#9D4EDD] bg-clip-text text-transparent">
-                            Elite-Immo
+                        <h1 className="text-3xl md:text-2xl font-black bg-gradient-to-r from-[#7084FF] to-[#9D4EDD] bg-clip-text text-transparent tracking-tight">
+                            {language === 'fr' ? 'Elite-Immo' : 'Elite-Real Estate'}
                         </h1>
-                        <p className="text-sm text-muted-foreground">Votre dossier en 3 minutes</p>
+                        <p className="text-sm md:text-base font-bold text-muted-foreground">{t('chat_dossier_subtitle')}</p>
                     </div>
                 </div>
             </div>
 
             {/* Fullscreen Chat Container with Glassmorphism */}
-            <div className="flex-1 flex items-center justify-center px-4 md:px-8 pb-8">
-                <div className="w-full max-w-[900px] h-full max-h-[700px]">
+            <div className="flex-1 flex items-center justify-center px-4 md:px-12 pb-8">
+                <div className="w-full max-w-[1000px] h-full max-h-[800px]">
                     {currentLeadId && (
-                        <div className="h-full backdrop-blur-xl bg-white/70 rounded-3xl shadow-2xl shadow-primary/10 border border-white/20 overflow-hidden">
+                        <div className="h-full backdrop-blur-2xl bg-white/80 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/40 overflow-hidden">
                             <ChatWindow leadId={currentLeadId} standalone={true} />
                         </div>
                     )}
@@ -59,9 +59,9 @@ export default function CandidaturePage() {
             </div>
 
             {/* Subtle Footer */}
-            <div className="w-full py-4 text-center">
-                <p className="text-xs text-muted-foreground/60">
-                    Propulsé par <span className="font-semibold text-primary">Elite-Immo</span> © 2026
+            <div className="w-full py-6 text-center">
+                <p className="text-xs font-bold text-muted-foreground/40 uppercase tracking-widest">
+                    {t('chat_dossier_footer')}
                 </p>
             </div>
         </div>
