@@ -22,6 +22,7 @@ const translations: Record<Language, Record<string, string>> = {
         "nav_notif_time_h": "Il y a {n} heure",
         "nav_user_name": "Agent Elite",
         "nav_user_role": "Administrateur",
+        "nav_notif_new": "Nouveau lead créé",
 
         // Sidebar
         "side_dashboard": "Tableau de Bord",
@@ -177,6 +178,7 @@ const translations: Record<Language, Record<string, string>> = {
         "nav_notif_time_h": "{n} hour ago",
         "nav_user_name": "Elite Agent",
         "nav_user_role": "Administrator",
+        "nav_notif_new": "New lead created",
 
         // Sidebar
         "side_dashboard": "Dashboard",

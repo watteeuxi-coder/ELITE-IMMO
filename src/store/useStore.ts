@@ -138,6 +138,13 @@ export const useStore = create<EliteStore>((set, get) => ({
             }
 
             set((state) => ({ leads: [lead, ...state.leads] }))
+
+            // Add notification for new lead
+            await get().addNotification({
+                lead_id: lead.id,
+                type: 'new_lead',
+                message_key: 'nav_notif_new'
+            })
         } catch (error) {
             console.error('Error adding lead:', error)
         }
@@ -301,13 +308,22 @@ export const useStore = create<EliteStore>((set, get) => ({
     },
 
     addNotification: async (notif) => {
-        const { data, error } = await supabase
-            .from('notifications')
-            .insert([notif])
-            .select()
+        try {
+            const { data, error } = await supabase
+                .from('notifications')
+                .insert([notif])
+                .select()
 
-        if (!error && data) {
-            set((state) => ({ notifications: [data[0], ...state.notifications] }))
+            if (error) {
+                console.error('Supabase Error (addNotification):', error)
+                return
+            }
+
+            if (data && data.length > 0) {
+                set((state) => ({ notifications: [data[0], ...state.notifications] }))
+            }
+        } catch (error) {
+            console.error('Error adding notification:', error)
         }
     },
 
