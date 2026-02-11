@@ -24,9 +24,9 @@ const translations: Record<Language, Record<string, string>> = {
         "nav_user_role": "Administrateur",
 
         // Sidebar
-        "side_dashboard": "Dashboard",
-        "side_leads": "Leads",
-        "side_pipeline": "Pipeline",
+        "side_dashboard": "Tableau de Bord",
+        "side_leads": "Prospects",
+        "side_pipeline": "Tunnel de Ventes",
         "side_calendar": "Calendrier",
         "side_settings": "Paramètres",
         "side_reset": "Réinitialiser",
@@ -46,6 +46,7 @@ const translations: Record<Language, Record<string, string>> = {
         "dash_status_complete": "Terminé",
         "dash_status_pending": "En attente",
         "dash_status_processing": "En cours",
+        "dash_notified": "Notifié",
         "dash_stats_prospects": "Prospects",
         "dash_stats_qualified": "Dossiers Qualifiés",
         "dash_stats_visits": "Rendez-vous",

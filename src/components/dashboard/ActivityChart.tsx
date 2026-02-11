@@ -14,19 +14,33 @@ import {
 } from 'recharts'
 
 import { useLanguage } from '../../i18n/LanguageContext'
-
-const data = [
-    { name: 'Jan', sales: 40, target: 50 },
-    { name: 'Feb', sales: 30, target: 45 },
-    { name: 'Mar', sales: 65, target: 60 },
-    { name: 'Apr', sales: 45, target: 55 },
-    { name: 'May', sales: 90, target: 70 },
-    { name: 'Jun', sales: 55, target: 65 },
-    { name: 'Jul', sales: 75, target: 80 },
-]
+import { useStore } from '../../store/useStore'
 
 export function ActivityChart() {
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
+    const { leads } = useStore()
+
+    const monthNames = language === 'fr'
+        ? ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
+        : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+    // Group leads by month
+    const currentYear = new Date().getFullYear()
+    const leadCounts = monthNames.map((name, index) => {
+        const count = leads.filter(lead => {
+            if (!lead.entryDate) return false
+            const d = new Date(lead.entryDate)
+            return d.getFullYear() === currentYear && d.getMonth() === index
+        }).length
+
+        return {
+            name,
+            sales: count,
+            target: Math.max(2, Math.floor(count * 1.5)) // Dynamic target just for visuals
+        }
+    })
+
+    const chartData = leadCounts
 
     return (
         <div className="w-full h-[350px]">
@@ -48,13 +62,13 @@ export function ActivityChart() {
             </div>
 
             <ResponsiveContainer width="100%" height="80%">
-                <ComposedChart data={data}>
+                <ComposedChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e5ea" />
                     <XAxis
                         dataKey="name"
                         axisLine={false}
                         tickLine={false}
-                        tick={{ fill: '#636366', fontSize: 12, fontWeight: 500 }}
+                        tick={{ fill: '#636366', fontSize: 10, fontWeight: 500 }}
                         dy={10}
                     />
                     <YAxis hide />
@@ -72,11 +86,11 @@ export function ActivityChart() {
                             return null;
                         }}
                     />
-                    <Bar dataKey="sales" radius={[10, 10, 10, 10]} barSize={30}>
-                        {data.map((entry, index) => (
+                    <Bar dataKey="sales" radius={[10, 10, 10, 10]} barSize={20}>
+                        {chartData.map((entry, index) => (
                             <Cell
                                 key={`cell-${index}`}
-                                fill={entry.sales > 60 ? '#7084FF' : '#7084FF55'}
+                                fill={entry.sales > 0 ? '#7084FF' : '#7084FF20'}
                                 className="transition-all duration-300"
                             />
                         ))}
@@ -85,9 +99,9 @@ export function ActivityChart() {
                         type="monotone"
                         dataKey="target"
                         stroke="#a78bfa"
-                        strokeWidth={3}
-                        dot={{ fill: '#a78bfa', r: 5 }}
-                        activeDot={{ r: 7 }}
+                        strokeWidth={2}
+                        dot={{ fill: '#a78bfa', r: 3 }}
+                        activeDot={{ r: 5 }}
                     />
                 </ComposedChart>
             </ResponsiveContainer>

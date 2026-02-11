@@ -92,19 +92,26 @@ export default function LeadsPage() {
                                 <button
                                     onClick={() => setSelectedLeadId(lead.id)}
                                     className={cn(
-                                        "w-full p-5 flex items-center gap-4 transition-all border-b border-border/50",
-                                        activeLead?.id === lead.id ? "bg-primary/5 border-r-4 border-r-primary" : "hover:bg-secondary/30"
+                                        "w-full p-5 flex items-center gap-4 transition-all",
+                                        activeLead?.id === lead.id
+                                            ? "bg-primary/10 ring-1 ring-inset ring-primary/20"
+                                            : "odd:bg-white even:bg-slate-50/50 hover:bg-primary/5"
                                     )}
                                 >
-                                    <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-primary text-sm shrink-0">
+                                    <div className={cn(
+                                        "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-colors",
+                                        activeLead?.id === lead.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                                    )}>
                                         {lead.name ? lead.name[0] : '?'}
                                     </div>
                                     <div className="flex-1 text-left">
                                         <div className="flex items-center justify-between mb-0.5">
                                             <p className="text-sm font-bold text-foreground truncate">{lead.name}</p>
-                                            <span className="text-[10px] font-black text-primary">{lead.aiScore}%</span>
+                                            <span className="text-[10px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">{lead.aiScore}%</span>
                                         </div>
-                                        <p className="text-[11px] text-muted-foreground truncate">{lead.chatHistory?.length ? lead.chatHistory[lead.chatHistory.length - 1].message : t('leads_no_message')}</p>
+                                        <p className="text-[11px] text-muted-foreground truncate leading-relaxed">
+                                            {lead.chatHistory?.length ? lead.chatHistory[lead.chatHistory.length - 1].message : t('leads_no_message')}
+                                        </p>
                                     </div>
                                 </button>
                                 <button
@@ -112,7 +119,7 @@ export default function LeadsPage() {
                                         e.stopPropagation()
                                         if (confirm(t('leads_delete_confirm'))) deleteLead(lead.id)
                                     }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-red-400 opacity-0 lg:group-hover:opacity-100 hover:text-red-500 transition-all"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>

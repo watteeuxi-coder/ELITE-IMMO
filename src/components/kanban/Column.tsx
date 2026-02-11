@@ -4,16 +4,10 @@ import React from 'react'
 import { TaskCard } from './TaskCard'
 import { Lead } from '../../store/useStore'
 import { Plus, MoreHorizontal } from 'lucide-react'
-
-interface ColumnProps {
-    title: string
-    leads: Lead[]
-    status: Lead['status']
-}
-
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useLanguage } from '../../i18n/LanguageContext'
+import { useStore } from '../../store/useStore'
 
 interface ColumnProps {
     title: string
@@ -23,12 +17,28 @@ interface ColumnProps {
 
 export function Column({ title, leads, status }: ColumnProps) {
     const { t } = useLanguage()
+    const { addLead } = useStore()
     const { setNodeRef } = useDroppable({
         id: status,
     })
 
     const handleAddLead = () => {
-        alert(t('kanban_add_alert').replace('{title}', title))
+        const newLead: Lead = {
+            id: crypto.randomUUID(),
+            name: 'Nouveau Prospect',
+            income: 0,
+            contractType: 'CDI',
+            hasGuarantor: false,
+            entryDate: new Date().toISOString().split('T')[0],
+            aiScore: 0,
+            status: status,
+            chatHistory: []
+        }
+        addLead(newLead)
+    }
+
+    const handleOpenMenu = () => {
+        alert(t('common_coming_soon') || 'Bientôt disponible...')
     }
 
     return (
@@ -47,7 +57,10 @@ export function Column({ title, leads, status }: ColumnProps) {
                     >
                         <Plus className="w-4 h-4" />
                     </button>
-                    <button className="p-1.5 text-muted-foreground hover:text-foreground transition-colors hover:bg-secondary rounded-lg">
+                    <button
+                        onClick={handleOpenMenu}
+                        className="p-1.5 text-muted-foreground hover:text-foreground transition-colors hover:bg-secondary rounded-lg"
+                    >
                         <MoreHorizontal className="w-4 h-4" />
                     </button>
                 </div>

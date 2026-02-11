@@ -19,7 +19,7 @@ export function RecentActivitiesTable() {
             id: lead.id,
             name: lead.name || 'Prospect Anonyme',
             avatar: lead.name ? lead.name[0] : '?',
-            action: lead.status === 'qualified' ? t('dash_notif_qualified') : (lead.chatHistory.length > 0 ? 'Dossier en cours' : 'Nouveau prospect'),
+            action: lead.status === 'qualified' ? t('dash_notified') : (lead.chatHistory.length > 0 ? t('chat_status_ongoing') : t('common_new')),
             type: lead.status === 'qualified' ? 'Visit' : 'Rent', // Simplified mapping for UI
             price: lead.aiScore > 0 ? `${lead.aiScore}%` : '—',
             status: lead.status === 'qualified' ? 'Complete' : 'Processing',
