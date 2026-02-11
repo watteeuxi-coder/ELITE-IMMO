@@ -20,7 +20,7 @@ export default function LeadsPage() {
 
     const handleAddNewLead = () => {
         const newLead: Lead = {
-            id: `lead-${Date.now()}`,
+            id: crypto.randomUUID(),
             name: 'Nouveau Prospect',
             income: 0,
             contractType: 'CDI',
