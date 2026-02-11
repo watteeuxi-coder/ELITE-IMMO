@@ -28,6 +28,7 @@ export default function CalendarPage() {
     const { t, language } = useLanguage()
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
     const [selectedVisit, setSelectedVisit] = useState<Visit | undefined>()
+    const [calendarView, setCalendarView] = useState<'month' | 'week'>('month')
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
@@ -97,6 +98,23 @@ export default function CalendarPage() {
         selectedDate && format(v.date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
     )
 
+    // Get days of the week for the selected date
+    const getWeekDays = (date: Date) => {
+        const start = new Date(date)
+        const day = start.getDay()
+        const diff = start.getDate() - day + (day === 0 ? -6 : 1) // Monday start
+        const monday = new Date(start.setDate(diff))
+
+        return Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(monday)
+            d.setDate(monday.getDate() + i)
+            return d
+        })
+    }
+
+    const weekDays = selectedDate ? getWeekDays(selectedDate) : []
+    const timeSlots = Array.from({ length: 13 }, (_, i) => i + 8) // 8h to 20h
+
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
             <div>
@@ -144,10 +162,30 @@ export default function CalendarPage() {
                 </div>
             )}
 
+            {/* View Toggle */}
+            <div className="flex justify-end">
+                <div className="inline-flex items-center gap-1 p-1 bg-white/60 rounded-xl shadow-sm border border-border/50">
+                    <button
+                        onClick={() => setCalendarView('month')}
+                        className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${calendarView === 'month' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        {t('calendar_view_month')}
+                    </button>
+                    <button
+                        onClick={() => setCalendarView('week')}
+                        className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${calendarView === 'week' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        {t('calendar_view_week')}
+                    </button>
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Calendar */}
+                {/* Calendar or Weekly View */}
                 <div className="lg:col-span-2 glass p-8 rounded-3xl">
-                    <style jsx global>{`
+                    {calendarView === 'month' ? (
+                        <>
+                            <style jsx global>{`
             .rdp {
               --rdp-cell-size: 50px;
               --rdp-accent-color: #7084FF;
@@ -254,24 +292,102 @@ export default function CalendarPage() {
             }
           `}</style>
 
-                    <DayPicker
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        locale={language === 'fr' ? fr : undefined}
-                        modifiers={{
-                            visit: visitDates,
-                            visitConfirmed: confirmedVisitDates,
-                            visitPending: pendingVisitDates,
-                            visitMissed: missedVisitDates
-                        }}
-                        modifiersClassNames={{
-                            visit: 'visit-indicator',
-                            visitConfirmed: 'visit-confirmed',
-                            visitPending: 'visit-pending',
-                            visitMissed: 'visit-missed'
-                        }}
-                    />
+                            <DayPicker
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={setSelectedDate}
+                                locale={language === 'fr' ? fr : undefined}
+                                modifiers={{
+                                    visit: visitDates,
+                                    visitConfirmed: confirmedVisitDates,
+                                    visitPending: pendingVisitDates,
+                                    visitMissed: missedVisitDates
+                                }}
+                                modifiersClassNames={{
+                                    visit: 'visit-indicator',
+                                    visitConfirmed: 'visit-confirmed',
+                                    visitPending: 'visit-pending',
+                                    visitMissed: 'visit-missed'
+                                }}
+                            />
+                        </>
+                    ) : (
+                        /* Weekly View */
+                        <div className="space-y-4">
+                            <h3 className="text-lg font-bold text-foreground mb-4">
+                                {weekDays.length > 0 && `${format(weekDays[0], language === 'fr' ? 'd MMM' : 'MMM d', { locale: language === 'fr' ? fr : undefined })} - ${format(weekDays[6], language === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy', { locale: language === 'fr' ? fr : undefined })}`}
+                            </h3>
+                            <div className="overflow-x-auto">
+                                <div className="min-w-[700px]">
+                                    {/* Header - Days of week */}
+                                    <div className="grid grid-cols-8 gap-0 mb-2">
+                                        <div className="text-xs font-medium text-muted-foreground p-2">{t('calendar_hour')}</div>
+                                        {weekDays.map((day, idx) => (
+                                            <div key={idx} className="text-center p-2">
+                                                <div className="text-xs font-semibold text-muted-foreground uppercase">
+                                                    {format(day, language === 'fr' ? 'EEE' : 'EEE', { locale: language === 'fr' ? fr : undefined })}
+                                                </div>
+                                                <div className={`text-2xl font-bold mt-1 ${format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+                                                        ? 'text-primary'
+                                                        : 'text-foreground'
+                                                    }`}>
+                                                    {format(day, 'd')}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Time Grid */}
+                                    <div className="space-y-0 border border-border/30 rounded-xl overflow-hidden">
+                                        {timeSlots.map((hour) => (
+                                            <div key={hour} className="grid grid-cols-8 gap-0 border-b border-border/20 last:border-b-0 min-h-[70px]">
+                                                {/* Time label */}
+                                                <div className="flex items-start justify-center pt-2 bg-muted/30 border-r border-border/30">
+                                                    <span className="text-sm font-bold text-muted-foreground">{hour}:00</span>
+                                                </div>
+                                                {/* Day columns */}
+                                                {weekDays.map((day, dayIdx) => {
+                                                    const dayVisits = visits.filter(v =>
+                                                        format(v.date, 'yyyy-MM-dd') === format(day, 'yyyy-MM-dd')
+                                                    )
+                                                    const hourVisit = dayVisits.find(v => v.time && v.time.startsWith(hour.toString().padStart(2, '0')))
+
+                                                    return (
+                                                        <div
+                                                            key={dayIdx}
+                                                            className={`relative border-r border-border/20 last:border-r-0 p-2 hover:bg-primary/5 transition-colors cursor-pointer ${format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+                                                                    ? 'bg-primary/5'
+                                                                    : 'bg-white/50'
+                                                                }`}
+                                                        >
+                                                            {hourVisit ? (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setSelectedDate(day)
+                                                                        setSelectedVisit(hourVisit)
+                                                                    }}
+                                                                    className={`w-full h-full p-2 rounded-lg text-left text-xs font-semibold transition-all hover:scale-[1.02] shadow-sm ${hourVisit.status === 'confirmed'
+                                                                            ? 'bg-green-100 text-green-900 border-2 border-green-400'
+                                                                            : hourVisit.status === 'missed'
+                                                                                ? 'bg-red-100 text-red-900 border-2 border-red-400'
+                                                                                : 'bg-orange-100 text-orange-900 border-2 border-orange-400'
+                                                                        }`}
+                                                                >
+                                                                    <div className="font-bold truncate">{hourVisit.leadName}</div>
+                                                                    <div className="text-[10px] opacity-75 mt-1">{hourVisit.time}</div>
+                                                                    <div className="text-[10px] font-bold mt-1">{hourVisit.aiScore}%</div>
+                                                                </button>
+                                                            ) : null}
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Visit Details Panel */}

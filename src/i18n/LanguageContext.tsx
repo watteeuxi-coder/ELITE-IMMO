@@ -106,6 +106,9 @@ const translations: Record<Language, Record<string, string>> = {
         "calendar_status_missed": "Manqué",
         "calendar_missed_title": "Rendez-vous manqués",
         "calendar_recontact": "À relancer",
+        "calendar_view_month": "Vue Mois",
+        "calendar_view_week": "Vue Semaine",
+        "calendar_hour": "h",
 
         // Chat
         chat_welcome: "Bonjour ! Je suis votre assistant Elite-Immo. Je vais vous aider à constituer votre dossier. Quel est votre nom complet ?",
@@ -271,6 +274,9 @@ const translations: Record<Language, Record<string, string>> = {
         "calendar_status_missed": "Missed",
         "calendar_missed_title": "Missed Appointments",
         "calendar_recontact": "Follow Up",
+        "calendar_view_month": "Month View",
+        "calendar_view_week": "Week View",
+        "calendar_hour": "h",
 
         // Chat
         "chat_welcome": "Hello! I am Elite-Immo's AI assistant. I will help you qualify your rental application. To start, what is your full name?",
