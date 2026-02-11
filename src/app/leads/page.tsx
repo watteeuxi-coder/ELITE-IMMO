@@ -41,46 +41,48 @@ export default function LeadsPage() {
     const activeLead = leads.find((l: Lead) => l.id === selectedLeadId) || filteredLeads[0]
 
     return (
-        <div className="flex flex-col h-[calc(100vh-160px)] space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col h-full lg:h-[calc(100vh-160px)] space-y-4 md:space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-1 text-foreground">{t('leads_title')}</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight mb-1 text-foreground">{t('leads_title')}</h1>
                     <p className="text-muted-foreground font-medium text-sm">{t('leads_subtitle')}</p>
                 </div>
-                <div className="flex gap-3">
-                    <div className="relative">
+                <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+                    <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder={t('leads_search_placeholder')}
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 bg-white border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7084FF]/20 text-sm w-64 shadow-sm"
+                            className="pl-10 pr-4 py-2 bg-white border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7084FF]/20 text-sm w-full md:w-64 shadow-sm"
                         />
                     </div>
-                    <button
-                        onClick={() => setFilterOnlyQualified(!filterOnlyQualified)}
-                        className={cn(
-                            "p-2 border rounded-xl transition-all",
-                            filterOnlyQualified ? "bg-primary/10 border-primary text-primary" : "bg-white border-border text-muted-foreground hover:bg-secondary"
-                        )}
-                        title={filterOnlyQualified ? t('leads_filter_all') : t('leads_filter_qualified')}
-                    >
-                        <Filter className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={handleAddNewLead}
-                        className="flex items-center gap-2 bg-[#7084FF] text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-[#7084FF]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span>{t('nav_new_lead')}</span>
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setFilterOnlyQualified(!filterOnlyQualified)}
+                            className={cn(
+                                "p-2 border rounded-xl transition-all flex-1 sm:flex-none flex justify-center items-center",
+                                filterOnlyQualified ? "bg-primary/10 border-primary text-primary" : "bg-white border-border text-muted-foreground hover:bg-secondary"
+                            )}
+                            title={filterOnlyQualified ? t('leads_filter_all') : t('leads_filter_qualified')}
+                        >
+                            <Filter className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={handleAddNewLead}
+                            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-[#7084FF] text-white px-4 py-2 rounded-xl font-bold shadow-lg shadow-[#7084FF]/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        >
+                            <Plus className="w-5 h-5" />
+                            <span>{t('nav_new_lead')}</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="flex gap-6 flex-1 min-h-0">
+            <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 overflow-hidden md:overflow-visible">
                 {/* Leads List */}
-                <div className="w-80 glass rounded-3xl overflow-hidden flex flex-col">
+                <div className="w-full lg:w-80 glass rounded-3xl overflow-hidden flex flex-col h-[300px] lg:h-full shrink-0">
                     <div className="p-5 border-b border-border bg-white/50">
                         <h3 className="font-bold text-foreground">{t('leads_last_prospects')}</h3>
                     </div>
@@ -110,7 +112,7 @@ export default function LeadsPage() {
                                         e.stopPropagation()
                                         if (confirm(t('leads_delete_confirm'))) deleteLead(lead.id)
                                     }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-red-400 opacity-0 lg:group-hover:opacity-100 hover:text-red-500 transition-all"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -120,7 +122,7 @@ export default function LeadsPage() {
                 </div>
 
                 {/* Chat Window */}
-                <div className="flex-1 glass rounded-3xl overflow-hidden shadow-xl border border-white/50">
+                <div className="flex-1 glass rounded-3xl overflow-hidden shadow-xl border border-white/50 min-h-[400px] lg:min-h-0">
                     {activeLead ? (
                         <ChatWindow leadId={activeLead.id} />
                     ) : (

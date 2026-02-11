@@ -4,8 +4,10 @@ import React, { useEffect, useState } from 'react'
 import { ChatWindow } from '../../components/chat/ChatWindow'
 import { useStore } from '../../store/useStore'
 import { Sparkles } from 'lucide-react'
+import { useLanguage } from '../../i18n/LanguageContext'
 
 export default function CandidaturePage() {
+    const { t, language } = useLanguage()
     const { leads, addLead, setActiveLead } = useStore()
     const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
 
