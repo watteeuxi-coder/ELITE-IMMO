@@ -6,15 +6,13 @@ import { ChatWindow } from '../../components/chat/ChatWindow'
 import { cn } from '../../lib/utils'
 import { Search, Filter, Plus, Trash2, User } from 'lucide-react'
 import { useLanguage } from '../../i18n/LanguageContext'
-import { useSearchParams } from 'next/navigation'
 
 export default function LeadsPage() {
     const { leads, addLead, deleteLead, fetchLeads, isLoading } = useStore()
     const { t } = useLanguage()
-    const searchParams = useSearchParams()
     const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>()
     const [searchTerm, setSearchTerm] = useState('')
-    const [filterOnlyQualified, setFilterOnlyQualified] = useState(searchParams.get('qualified') === 'true')
+    const [filterOnlyQualified, setFilterOnlyQualified] = useState(false)
 
     useEffect(() => {
         fetchLeads()
