@@ -16,7 +16,7 @@ export function Navbar() {
 
     const handleQuickAddLead = () => {
         const newLead = {
-            id: `lead-${Date.now()}`,
+            id: crypto.randomUUID(),
             name: 'Nouveau Prospect',
             income: 0,
             contractType: 'CDI' as const,
