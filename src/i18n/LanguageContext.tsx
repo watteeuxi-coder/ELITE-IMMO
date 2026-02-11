@@ -138,6 +138,22 @@ const translations: Record<Language, Record<string, string>> = {
 
         // Common
         common_new: "Nouveau",
+
+        // Settings
+        settings_title: "Paramètres",
+        settings_subtitle: "Gérez vos préférences et les réglages de votre compte.",
+        settings_general: "Général",
+        settings_username: "Nom d'utilisateur",
+        settings_email: "Email",
+        settings_notifications: "Notifications",
+        settings_new_leads: "Nouveaux leads",
+        settings_upcoming_visits: "Prochaines visites",
+        settings_pipeline_updates: "Mises à jour du pipeline",
+        settings_save: "Enregistrer les modifications",
+        settings_admin_title: "Zone de Danger (Admin)",
+        settings_reset_db: "Réinitialiser la base de données",
+        settings_reset_confirm: "Êtes-vous sûr de vouloir supprimer TOUTES les données ? Cette action est irréversible.",
+        settings_reset_success: "La base de données a été remise à zéro.",
     },
     en: {
         // Navbar

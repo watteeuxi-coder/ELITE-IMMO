@@ -106,7 +106,10 @@ export function Sidebar() {
                         <span className="text-sm font-semibold text-foreground">{t('nav_user_name')}</span>
                         <span className="text-xs text-muted-foreground">{t('side_user_role')}</span>
                     </div>
-                    <button className="ml-auto p-2 text-muted-foreground hover:text-destructive transition-colors">
+                    <button
+                        onClick={() => alert('Déconnexion simulée (Mode Démo)')}
+                        className="ml-auto p-2 text-muted-foreground hover:text-destructive transition-colors"
+                    >
                         <LogOut className="w-4 h-4" />
                     </button>
                 </div>
