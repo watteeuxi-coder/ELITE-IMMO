@@ -96,6 +96,16 @@ const translations: Record<Language, Record<string, string>> = {
         "calendar_empty_state": "Aucune visite planifiée. Créez un lead avec une date d'emménagement pour voir les rendez-vous ici.",
         "calendar_default_activity": "Visite d'emménagement",
         "calendar_actions_title": "Actions sur la visite de {name}",
+        "calendar_visit_detail": "Détails de la visite",
+        "calendar_ai_score": "Score IA",
+        "calendar_call": "Appeler",
+        "calendar_email": "Envoyer un email",
+        "calendar_view_profile": "Voir le dossier",
+        "calendar_status_confirmed": "Confirmé",
+        "calendar_status_pending": "En attente",
+        "calendar_status_missed": "Manqué",
+        "calendar_missed_title": "Rendez-vous manqués",
+        "calendar_recontact": "À relancer",
 
         // Chat
         chat_welcome: "Bonjour ! Je suis votre assistant Elite-Immo. Je vais vous aider à constituer votre dossier. Quel est votre nom complet ?",
@@ -251,6 +261,16 @@ const translations: Record<Language, Record<string, string>> = {
         "calendar_empty_state": "No visits planned. Create a lead with a move-in date to see appointments here.",
         "calendar_default_activity": "Move-in visit",
         "calendar_actions_title": "Actions on the visit of {name}",
+        "calendar_visit_detail": "Visit Details",
+        "calendar_ai_score": "AI Score",
+        "calendar_call": "Call",
+        "calendar_email": "Send Email",
+        "calendar_view_profile": "View Profile",
+        "calendar_status_confirmed": "Confirmed",
+        "calendar_status_pending": "Pending",
+        "calendar_status_missed": "Missed",
+        "calendar_missed_title": "Missed Appointments",
+        "calendar_recontact": "Follow Up",
 
         // Chat
         "chat_welcome": "Hello! I am Elite-Immo's AI assistant. I will help you qualify your rental application. To start, what is your full name?",
