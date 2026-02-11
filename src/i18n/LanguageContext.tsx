@@ -275,6 +275,10 @@ const translations: Record<Language, Record<string, string>> = {
         settings_upcoming_visits: "Upcoming visits",
         settings_pipeline_updates: "Pipeline updates",
         settings_save: "Save changes",
+        settings_admin_title: "Danger Zone (Admin)",
+        settings_reset_db: "Reset Database",
+        settings_reset_confirm: "Are you sure you want to delete ALL data? This action is irreversible.",
+        settings_reset_success: "Database has been reset successfully.",
 
         // Common
         common_new: "New",

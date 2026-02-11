@@ -29,6 +29,7 @@ interface EliteStore {
     setActiveLead: (id: string | null) => void;
     calculateScore: (lead: Partial<Lead>) => number;
     syncChat: (leadId: string, message: ChatMessage) => Promise<void>;
+    resetDatabase: () => Promise<void>;
 }
 
 export const useStore = create<EliteStore>((set, get) => ({
@@ -203,5 +204,37 @@ export const useStore = create<EliteStore>((set, get) => ({
         if (lead.entryDate) score += 5;
 
         return Math.min(score, 100);
+    },
+
+    resetDatabase: async () => {
+        set({ isLoading: true })
+        try {
+            // Delete all messages first (to avoid FK constraints if they exist)
+            const { error: msgError } = await supabase
+                .from('chat_messages')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000') // Hack to delete all: delete where id is not an impossible UUID
+
+            if (msgError) console.error('Error deleting messages:', msgError)
+
+            // Delete all leads
+            const { error: leadsError } = await supabase
+                .from('leads')
+                .delete()
+                .neq('id', '00000000-0000-0000-0000-000000000000')
+
+            if (leadsError) {
+                console.error('Error deleting leads:', leadsError)
+                throw leadsError
+            }
+
+            set({ leads: [], activeLead: null })
+            alert('Base de données réinitialisée avec succès !')
+        } catch (error: any) {
+            console.error('Reset error:', error)
+            alert(`Erreur lors de la réinitialisation: ${error.message}`)
+        } finally {
+            set({ isLoading: false })
+        }
     }
 }))
