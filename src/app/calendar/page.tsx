@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { DayPicker } from 'react-day-picker'
 import { format, parse } from 'date-fns'
 import { fr } from 'date-fns/locale'
@@ -31,6 +31,11 @@ export default function CalendarPage() {
 
     const today = new Date()
     today.setHours(0, 0, 0, 0)
+
+    // Reset selected visit when date changes
+    useEffect(() => {
+        setSelectedVisit(undefined)
+    }, [selectedDate])
 
     // Convert leads with entryDate to visits
     const visits = useMemo(() => {
