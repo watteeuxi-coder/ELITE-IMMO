@@ -60,29 +60,6 @@ export default function SettingsPage() {
                 {t('settings_save')}
             </button>
 
-            {/* Admin Reset Section (Conditional) */}
-            {(process.env.NEXT_PUBLIC_SHOW_ADMIN_TOOLS === 'true' || process.env.NODE_ENV !== 'production') && (
-                <div className="mt-12 pt-8 border-t border-red-100 space-y-6">
-                    <div className="p-8 bg-red-50/50 border-2 border-red-100 rounded-3xl space-y-6">
-                        <div className="flex items-center gap-3 text-red-600">
-                            <h2 className="text-xl font-black uppercase tracking-tight">{t('settings_admin_title')}</h2>
-                        </div>
-                        <p className="text-sm text-red-600/70 font-medium">
-                            Cette section est réservée aux démonstrations. L'action ci-dessous supprimera l'intégralité des prospects et des messages de chat enregistrés dans Supabase.
-                        </p>
-                        <button
-                            onClick={() => {
-                                if (window.confirm(t('settings_reset_confirm'))) {
-                                    useStore.getState().resetDatabase()
-                                }
-                            }}
-                            className="w-full py-4 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-black shadow-xl shadow-red-500/20 transition-all active:scale-95"
-                        >
-                            {t('settings_reset_db')}
-                        </button>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

@@ -12,10 +12,12 @@ import {
     CircleUser,
     LogOut,
     Share2,
-    Check
+    Check,
+    RefreshCw
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useLanguage } from '../../i18n/LanguageContext'
+import { useStore } from '../../store/useStore'
 
 export function Sidebar() {
     const { t } = useLanguage()
@@ -37,6 +39,12 @@ export function Sidebar() {
             setTimeout(() => setShowToast(false), 3000)
         } catch (err) {
             console.error('Failed to copy:', err)
+        }
+    }
+
+    const handleReset = () => {
+        if (window.confirm(t('settings_reset_confirm'))) {
+            useStore.getState().resetDatabase()
         }
     }
 
@@ -86,6 +94,15 @@ export function Sidebar() {
             </nav>
 
             <div className="pt-6 border-t border-border mt-auto space-y-2">
+                {/* Reset Button (Sidebar requested by user) */}
+                <button
+                    onClick={handleReset}
+                    className="flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all text-red-500 hover:bg-red-50"
+                >
+                    <RefreshCw className="w-5 h-5" />
+                    <span className="font-bold text-sm">{t('side_reset')}</span>
+                </button>
+
                 <Link
                     href="/settings"
                     className={cn(
