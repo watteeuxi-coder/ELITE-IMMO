@@ -12,14 +12,14 @@ export default function CandidaturePage() {
     useEffect(() => {
         // Create a new lead automatically when the page loads
         if (!currentLeadId) {
-            const newLeadId = `lead_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+            const newLeadId = crypto.randomUUID()
             const newLead = {
                 id: newLeadId,
                 name: '',
                 status: 'new' as const,
                 aiScore: 0,
                 income: 0,
-                contractType: 'CDD' as const,
+                contractType: 'CDI' as const,
                 hasGuarantor: false,
                 entryDate: '',
                 chatHistory: []
