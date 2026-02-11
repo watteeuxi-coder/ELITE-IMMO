@@ -44,7 +44,10 @@ export const useStore = create<EliteStore>((set, get) => ({
                 .select('*')
                 .order('created_at', { ascending: false })
 
-            if (leadsError) throw leadsError
+            if (leadsError) {
+                console.error('Supabase Error (leads):', leadsError)
+                throw leadsError
+            }
 
             // Fetch chat history for each lead
             const leadsWithChat = await Promise.all((leadsData || []).map(async (lead) => {
@@ -53,6 +56,8 @@ export const useStore = create<EliteStore>((set, get) => ({
                     .select('role, message')
                     .eq('lead_id', lead.id)
                     .order('created_at', { ascending: true })
+
+                if (msgError) console.error(`Error fetching chat for lead ${lead.id}:`, msgError)
 
                 return {
                     id: lead.id,
@@ -68,8 +73,11 @@ export const useStore = create<EliteStore>((set, get) => ({
             }))
 
             set({ leads: leadsWithChat })
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error fetching leads:', error)
+            if (error.message?.includes('network')) {
+                alert('Erreur réseau Supabase. Vérifiez votre connexion.')
+            }
         } finally {
             set({ isLoading: false })
         }
@@ -88,7 +96,11 @@ export const useStore = create<EliteStore>((set, get) => ({
                 status: lead.status
             }])
 
-            if (error) throw error
+            if (error) {
+                console.error('Supabase Error (add):', error)
+                alert(`Erreur Supabase lors de l'ajout: ${error.message}`)
+                throw error
+            }
 
             set((state) => ({ leads: [lead, ...state.leads] }))
         } catch (error) {
@@ -112,7 +124,10 @@ export const useStore = create<EliteStore>((set, get) => ({
                     .from('leads')
                     .update(supabaseUpdates)
                     .eq('id', id)
-                if (error) throw error
+                if (error) {
+                    console.error('Supabase Error (update):', error)
+                    throw error
+                }
             }
 
             set((state) => ({
@@ -128,7 +143,10 @@ export const useStore = create<EliteStore>((set, get) => ({
     deleteLead: async (id) => {
         try {
             const { error } = await supabase.from('leads').delete().eq('id', id)
-            if (error) throw error
+            if (error) {
+                console.error('Supabase Error (delete):', error)
+                throw error
+            }
             set((state) => ({
                 leads: state.leads.filter((l) => l.id !== id)
             }))
@@ -144,7 +162,10 @@ export const useStore = create<EliteStore>((set, get) => ({
                 role: message.role,
                 message: message.message
             }])
-            if (error) throw error
+            if (error) {
+                console.error('Supabase Error (syncChat):', error)
+                throw error
+            }
 
             set((state) => ({
                 leads: state.leads.map((l) =>
