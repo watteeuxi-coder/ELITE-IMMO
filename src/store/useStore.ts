@@ -13,9 +13,20 @@ export interface Lead {
     contractType: 'CDI' | 'CDD' | 'Alternance' | 'Intérim' | 'Indépendant' | 'Stage' | string;
     hasGuarantor: boolean;
     entryDate: string;
+    email?: string;
+    phone?: string;
     aiScore: number;
     status: 'new' | 'qualified' | 'visit' | 'applied' | 'signed';
     chatHistory: ChatMessage[];
+}
+
+export interface EliteNotification {
+    id: string;
+    created_at: string;
+    lead_id: string;
+    type: 'new_lead' | 'qualified' | 'visit';
+    message_key: string;
+    is_read: boolean;
 }
 
 interface EliteStore {
@@ -30,10 +41,18 @@ interface EliteStore {
     calculateScore: (lead: Partial<Lead>) => number;
     syncChat: (leadId: string, message: ChatMessage) => Promise<void>;
     resetDatabase: () => Promise<void>;
+
+    // Notifications
+    notifications: EliteNotification[];
+    fetchNotifications: () => Promise<void>;
+    addNotification: (notification: Omit<EliteNotification, 'id' | 'created_at' | 'is_read'>) => Promise<void>;
+    markAllNotificationsAsRead: () => Promise<void>;
+    subscribeToNotifications: () => void;
 }
 
 export const useStore = create<EliteStore>((set, get) => ({
     leads: [],
+    notifications: [],
     activeLead: null,
     isLoading: false,
 
@@ -67,6 +86,8 @@ export const useStore = create<EliteStore>((set, get) => ({
                     contractType: lead.contract_type,
                     hasGuarantor: lead.has_guarantor,
                     entryDate: lead.entry_date,
+                    email: lead.email,
+                    phone: lead.phone,
                     aiScore: lead.ai_score,
                     status: lead.status,
                     chatHistory: messages || []
@@ -74,6 +95,17 @@ export const useStore = create<EliteStore>((set, get) => ({
             }))
 
             set({ leads: leadsWithChat })
+
+            // Also fetch notifications
+            const { data: notifData, error: notifError } = await supabase
+                .from('notifications')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(20)
+
+            if (notifError) console.error('Supabase Error (notifications):', notifError)
+            else set({ notifications: notifData || [] })
+
         } catch (error: any) {
             console.error('Error fetching leads:', error)
             if (error.message?.includes('network')) {
@@ -93,6 +125,8 @@ export const useStore = create<EliteStore>((set, get) => ({
                 contract_type: lead.contractType,
                 has_guarantor: lead.hasGuarantor,
                 entry_date: lead.entryDate,
+                email: lead.email,
+                phone: lead.phone,
                 ai_score: lead.aiScore,
                 status: lead.status
             }])
@@ -117,6 +151,8 @@ export const useStore = create<EliteStore>((set, get) => ({
             if (updates.contractType !== undefined) supabaseUpdates.contract_type = updates.contractType
             if (updates.hasGuarantor !== undefined) supabaseUpdates.has_guarantor = updates.hasGuarantor
             if (updates.entryDate !== undefined) supabaseUpdates.entry_date = updates.entryDate
+            if (updates.email !== undefined) supabaseUpdates.email = updates.email
+            if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone
             if (updates.aiScore !== undefined) supabaseUpdates.ai_score = updates.aiScore
             if (updates.status !== undefined) supabaseUpdates.status = updates.status
 
@@ -235,6 +271,56 @@ export const useStore = create<EliteStore>((set, get) => ({
             alert(`Erreur lors de la réinitialisation: ${error.message}`)
         } finally {
             set({ isLoading: false })
+        }
+    },
+
+    fetchNotifications: async () => {
+        const { data, error } = await supabase
+            .from('notifications')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20)
+
+        if (!error) set({ notifications: data || [] })
+
+        // Auto-subscribe
+        get().subscribeToNotifications()
+    },
+
+    subscribeToNotifications: () => {
+        const channel = supabase
+            .channel('realtime_notifications')
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: 'notifications'
+            }, () => {
+                get().fetchNotifications()
+            })
+            .subscribe()
+    },
+
+    addNotification: async (notif) => {
+        const { data, error } = await supabase
+            .from('notifications')
+            .insert([notif])
+            .select()
+
+        if (!error && data) {
+            set((state) => ({ notifications: [data[0], ...state.notifications] }))
+        }
+    },
+
+    markAllNotificationsAsRead: async () => {
+        const { error } = await supabase
+            .from('notifications')
+            .update({ is_read: true })
+            .eq('is_read', false)
+
+        if (!error) {
+            set((state) => ({
+                notifications: state.notifications.map(n => ({ ...n, is_read: true }))
+            }))
         }
     }
 }))

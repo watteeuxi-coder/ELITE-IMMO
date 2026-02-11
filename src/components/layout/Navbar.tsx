@@ -4,15 +4,22 @@ import React, { useState } from 'react'
 import { Search, Bell, Settings, PlusCircle } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { cn } from '../../lib/utils'
 import { useStore } from '../../store/useStore'
 import { useLanguage } from '../../i18n/LanguageContext'
 import { LanguageSelector } from './LanguageSelector'
+import { useEffect } from 'react'
 
 export function Navbar() {
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
     const [showNotifications, setShowNotifications] = useState(false)
     const router = useRouter()
-    const { addLead } = useStore()
+    const { addLead, notifications, markAllNotificationsAsRead, fetchNotifications } = useStore()
+    const unreadCount = notifications.filter(n => !n.is_read).length
+
+    useEffect(() => {
+        fetchNotifications()
+    }, [fetchNotifications])
 
     const handleQuickAddLead = () => {
         const newLead = {
@@ -62,23 +69,53 @@ export function Navbar() {
                             className="p-3 bg-white border border-border rounded-xl hover:bg-[#7084FF]/10 hover:border-[#7084FF] transition-all relative group"
                         >
                             <Bell className="w-5 h-5 text-[#7084FF]" />
-                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                                2
-                            </span>
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-in zoom-in duration-300">
+                                    {unreadCount}
+                                </span>
+                            )}
                         </button>
 
                         {showNotifications && (
-                            <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-border p-4 z-50">
-                                <h3 className="font-bold text-foreground mb-3">{t('nav_notifications')}</h3>
-                                <div className="space-y-2">
-                                    <div className="p-3 bg-secondary/50 rounded-xl text-sm">
-                                        <p className="font-semibold text-foreground">{t('nav_notif_qualified')}</p>
-                                        <p className="text-xs text-muted-foreground">{t('nav_notif_time_m').replace('{n}', '2')}</p>
-                                    </div>
-                                    <div className="p-3 bg-secondary/50 rounded-xl text-sm">
-                                        <p className="font-semibold text-foreground">{t('nav_notif_meeting')}</p>
-                                        <p className="text-xs text-muted-foreground">{t('nav_notif_time_h').replace('{n}', '1')}</p>
-                                    </div>
+                            <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-border p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="font-bold text-foreground">{t('nav_notifications')}</h3>
+                                    {unreadCount > 0 && (
+                                        <button
+                                            onClick={() => markAllNotificationsAsRead()}
+                                            className="text-[10px] font-bold text-primary hover:text-primary/70 uppercase tracking-wider transition-colors"
+                                        >
+                                            {language === 'fr' ? 'Tout marquer comme lu' : 'Mark all as read'}
+                                        </button>
+                                    )}
+                                </div>
+                                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                                    {notifications.length === 0 ? (
+                                        <div className="py-8 text-center text-muted-foreground text-sm">
+                                            {language === 'fr' ? 'Aucune notification' : 'No notifications'}
+                                        </div>
+                                    ) : (
+                                        notifications.map((notif) => (
+                                            <div
+                                                key={notif.id}
+                                                onClick={() => {
+                                                    router.push(`/leads?id=${notif.lead_id}`)
+                                                    setShowNotifications(false)
+                                                }}
+                                                className={cn(
+                                                    "p-3 rounded-xl text-sm transition-all cursor-pointer border border-transparent",
+                                                    notif.is_read ? "opacity-60 bg-secondary/30" : "bg-primary/5 border-primary/10 hover:bg-primary/10"
+                                                )}
+                                            >
+                                                <p className={cn("text-foreground", !notif.is_read && "font-semibold")}>
+                                                    {t(notif.message_key || `nav_notif_${notif.type}`)}
+                                                </p>
+                                                <p className="text-[10px] text-muted-foreground mt-1">
+                                                    {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}

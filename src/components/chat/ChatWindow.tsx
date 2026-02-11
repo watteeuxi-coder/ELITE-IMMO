@@ -7,7 +7,7 @@ import { cn } from '../../lib/utils'
 import { useStore, Lead } from '../../store/useStore'
 import { useLanguage } from '../../i18n/LanguageContext'
 
-type ConversationStep = 'greeting' | 'name' | 'income' | 'contract' | 'contract_other' | 'guarantor' | 'entry_date' | 'complete'
+type ConversationStep = 'greeting' | 'name' | 'income' | 'contract' | 'contract_other' | 'guarantor' | 'entry_date' | 'email' | 'phone' | 'complete'
 
 export function ChatWindow({ leadId, standalone = false }: { leadId?: string; standalone?: boolean }) {
     const { t, language } = useLanguage()
@@ -38,6 +38,20 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             setStep('name')
         }
     }, [activeLead?.id, language])
+
+    // Resume conversation step based on filled fields
+    useEffect(() => {
+        if (activeLead && activeLead.chatHistory && activeLead.chatHistory.length > 0) {
+            if (activeLead.phone) setStep('complete')
+            else if (activeLead.email) setStep('phone')
+            else if (activeLead.entryDate) setStep('email')
+            else if (activeLead.hasGuarantor !== undefined) setStep('entry_date')
+            else if (activeLead.contractType) setStep('guarantor')
+            else if (activeLead.income > 0) setStep('contract')
+            else if (activeLead.name) setStep('income')
+            else setStep('name')
+        }
+    }, [activeLead?.id])
 
     const handleSend = async () => {
         if (!input.trim() || !activeLead || isThinking) return
@@ -126,6 +140,30 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         nextStep = 'entry_date'
                     } else {
                         leadUpdates.entryDate = input
+                        aiResponse = t('chat_email_ask')
+                        nextStep = 'email'
+                    }
+                    break
+
+                case 'email':
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                    if (!emailRegex.test(input.trim())) {
+                        aiResponse = t('chat_email_error')
+                        nextStep = 'email'
+                    } else {
+                        leadUpdates.email = input.trim()
+                        aiResponse = t('chat_phone_ask')
+                        nextStep = 'phone'
+                    }
+                    break
+
+                case 'phone':
+                    const phoneRegex = /^[\d\s+\-.]{8,}$/
+                    if (!phoneRegex.test(input.trim())) {
+                        aiResponse = t('chat_phone_error')
+                        nextStep = 'phone'
+                    } else {
+                        leadUpdates.phone = input.trim()
                         const tempLead = { ...activeLead, ...leadUpdates }
                         const finalScore = calculateScore(tempLead)
                         leadUpdates.aiScore = finalScore
@@ -146,6 +184,14 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         await updateLead(activeLead.id, leadUpdates)
         // Sync AI response
         await syncChat(activeLead.id, aiMessage)
+
+        if (nextStep === 'complete') {
+            useStore.getState().addNotification({
+                lead_id: activeLead.id,
+                type: 'qualified',
+                message_key: 'nav_notif_qualified'
+            })
+        }
 
         setStep(nextStep)
         setIsThinking(false)
@@ -370,6 +416,26 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                             </div>
                             <p className="text-sm font-bold text-foreground">
                                 {activeLead.entryDate || '—'}
+                            </p>
+                        </div>
+
+                        <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-muted-foreground font-medium">{t('chat_email')}</span>
+                                {activeLead.email && <BadgeCheck className="w-4 h-4 text-green-500" />}
+                            </div>
+                            <p className="text-sm font-bold text-foreground">
+                                {activeLead.email || '—'}
+                            </p>
+                        </div>
+
+                        <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-muted-foreground font-medium">{t('chat_phone')}</span>
+                                {activeLead.phone && <BadgeCheck className="w-4 h-4 text-green-500" />}
+                            </div>
+                            <p className="text-sm font-bold text-foreground">
+                                {activeLead.phone || '—'}
                             </p>
                         </div>
 

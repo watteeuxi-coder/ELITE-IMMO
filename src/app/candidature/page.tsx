@@ -8,7 +8,7 @@ import { useLanguage } from '../../i18n/LanguageContext'
 
 export default function CandidaturePage() {
     const { t, language } = useLanguage()
-    const { leads, addLead, setActiveLead } = useStore()
+    const { addLead, setActiveLead } = useStore()
     const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
 
     useEffect(() => {
