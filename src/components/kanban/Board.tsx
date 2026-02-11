@@ -72,17 +72,18 @@ export function KanbanBoard() {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
         >
-            <div className="flex gap-6 overflow-x-auto pb-8 h-full">
+            <div className="flex gap-4 md:gap-6 overflow-x-auto pb-8 h-full scrollbar-hide snap-x md:snap-none">
                 {STAGES.map((stage) => (
-                    <Column
-                        key={stage.status}
-                        title={stage.title}
-                        status={stage.status}
-                        leads={leads
-                            .filter((l: Lead) => l.status === stage.status)
-                            .sort((a: Lead, b: Lead) => (b.aiScore || 0) - (a.aiScore || 0))
-                        }
-                    />
+                    <div key={stage.status} className="snap-center shrink-0">
+                        <Column
+                            title={stage.title}
+                            status={stage.status}
+                            leads={leads
+                                .filter((l: Lead) => l.status === stage.status)
+                                .sort((a: Lead, b: Lead) => (b.aiScore || 0) - (a.aiScore || 0))
+                            }
+                        />
+                    </div>
                 ))}
             </div>
         </DndContext>
