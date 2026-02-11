@@ -1,14 +1,27 @@
 "use client"
 
+import React, { useEffect } from 'react'
 import { LayoutDashboard, Users, TrendingUp, Calendar as CalendarIcon } from 'lucide-react'
 import { StatsCard } from '../components/dashboard/StatsCard'
 import { ActivityChart } from '../components/dashboard/ActivityChart'
 import { RecentActivitiesTable } from '../components/dashboard/RecentActivitiesTable'
 import { UrgentDossiersSection } from '../components/dashboard/UrgentDossiersSection'
 import { useLanguage } from '../i18n/LanguageContext'
+import { useStore } from '../store/useStore'
 
 export default function Home() {
   const { t } = useLanguage()
+  const { leads, fetchLeads } = useStore()
+
+  useEffect(() => {
+    fetchLeads()
+  }, [fetchLeads])
+
+  const totalProspects = leads.length
+  const qualifiedLeads = leads.filter(l => l.status === 'qualified' || l.aiScore > 80).length
+  const signedLeads = leads.filter(l => l.status === 'signed').length
+  const visitLeads = leads.filter(l => l.status === 'visit').length
+
   return (
     <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-700">
       <div>
@@ -24,23 +37,23 @@ export default function Home() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           label={t('dash_stats_prospects')}
-          value="124"
+          value={totalProspects.toString()}
           icon={Users}
           color="blue"
           trend="+12%"
           trendUp={true}
         />
         <StatsCard
-          label={t('dash_stats_investments')}
-          value="42"
+          label={t('dash_stats_qualified')}
+          value={qualifiedLeads.toString()}
           icon={TrendingUp}
           color="purple"
           trend="+5%"
           trendUp={true}
         />
         <StatsCard
-          label={t('dash_stats_rentals')}
-          value="89"
+          label={t('dash_stats_visits')}
+          value={visitLeads.toString()}
           icon={CalendarIcon}
           color="green"
           trend="-2%"
@@ -48,7 +61,7 @@ export default function Home() {
         />
         <StatsCard
           label={t('dash_stats_sales')}
-          value="18"
+          value={signedLeads.toString()}
           icon={LayoutDashboard}
           color="orange"
           trend="+8%"

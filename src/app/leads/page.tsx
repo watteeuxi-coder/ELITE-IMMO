@@ -8,56 +8,15 @@ import { Search, Filter, Plus, Trash2 } from 'lucide-react'
 import { useLanguage } from '../../i18n/LanguageContext'
 
 export default function LeadsPage() {
-    const { leads, addLead, deleteLead } = useStore()
+    const { leads, addLead, deleteLead, fetchLeads, isLoading } = useStore()
     const { t } = useLanguage()
     const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>()
     const [searchTerm, setSearchTerm] = useState('')
     const [filterOnlyQualified, setFilterOnlyQualified] = useState(false)
 
     useEffect(() => {
-        // Add sample leads if empty
-        if (leads.length === 0) {
-            const timestamp = Date.now();
-            const sampleLeads: Lead[] = [
-                {
-                    id: `lead-${timestamp}-1`,
-                    name: 'Jean Dupont',
-                    income: 3500,
-                    contractType: 'CDI',
-                    hasGuarantor: true,
-                    entryDate: '2024-04-01',
-                    aiScore: 92,
-                    status: 'qualified',
-                    chatHistory: [
-                        { role: 'ai', message: "Bonjour Jean, j'ai bien reçu votre demande pour l'appartement Rue de Rivoli. Pourriez-vous me préciser votre revenu mensuel net ?" },
-                        { role: 'user', message: "Bonjour, je gagne 3500€ net par mois." },
-                        { role: 'ai', message: "C'est noté. Quel est votre type de contrat (CDI, CDD...) ?" },
-                        { role: 'user', message: "Je suis en CDI depuis 3 ans." },
-                    ]
-                },
-                {
-                    id: `lead-${timestamp}-2`,
-                    name: 'Marie Curie',
-                    income: 4200,
-                    contractType: 'Indépendant',
-                    hasGuarantor: false,
-                    entryDate: '2024-03-15',
-                    aiScore: 85,
-                    status: 'new',
-                    chatHistory: [
-                        { role: 'ai', message: "Bonjour Marie, bienvenue chez Elite-Immo. Quel est votre type de contrat ?" },
-                        { role: 'user', message: "Je suis indépendante (Freelance) depuis 5 ans." },
-                    ]
-                }
-            ]
-
-            sampleLeads.forEach(l => {
-                if (!leads.find((existing: Lead) => existing.id === l.id)) {
-                    addLead(l);
-                }
-            });
-        }
-    }, [leads.length, addLead, leads])
+        fetchLeads()
+    }, [fetchLeads])
 
     const handleAddNewLead = () => {
         const newLead: Lead = {

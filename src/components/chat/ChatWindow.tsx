@@ -15,7 +15,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const [isThinking, setIsThinking] = useState(false)
     const [editingIndex, setEditingIndex] = useState<number | null>(null)
     const [step, setStep] = useState<ConversationStep>('greeting')
-    const { leads, updateLead, activeLead: storeActiveLead, calculateScore } = useStore()
+    const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat } = useStore()
     const scrollRef = useRef<HTMLDivElement>(null)
 
     // Use provided leadId, or activeLead from store, or first lead
@@ -30,45 +30,20 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     // Initialize conversation if empty
     useEffect(() => {
         if (activeLead && (!activeLead.chatHistory || activeLead.chatHistory.length === 0)) {
-            updateLead(activeLead.id, {
-                chatHistory: [{
-                    role: 'ai',
-                    message: t('chat_welcome')
-                }]
-            })
+            const initialMsg = {
+                role: 'ai' as const,
+                message: t('chat_welcome')
+            }
+            syncChat(activeLead.id, initialMsg)
             setStep('name')
         }
-    }, [activeLead?.id, language]) // Re-run if language changes to translate first message
-
-
-    const handleEditMessage = (index: number) => {
-        const msg = activeLead?.chatHistory?.[index]
-        if (msg && msg.role === 'user') {
-            setInput(msg.message)
-            setEditingIndex(index)
-            // Determine step based on the index or simply reset conversation to that point
-            // For simplicity in a demo, we reset the step based on how many AI messages were before it
-            const previousAiMessages = activeLead?.chatHistory?.slice(0, index).filter((m: any) => m.role === 'ai').length || 0
-            const steps: ConversationStep[] = ['name', 'income', 'contract', 'guarantor', 'entry_date']
-            setStep(steps[previousAiMessages - 1] || 'name')
-        }
-    }
+    }, [activeLead?.id, language])
 
     const handleSend = async () => {
         if (!input.trim() || !activeLead || isThinking) return
 
         const userMessage = { role: 'user' as const, message: input }
-        let currentHistory = [...(activeLead.chatHistory || [])]
-
-        if (editingIndex !== null) {
-            // Replace the message and remove everything after it
-            currentHistory = currentHistory.slice(0, editingIndex)
-            setEditingIndex(null)
-        }
-
-        updateLead(activeLead.id, {
-            chatHistory: [...currentHistory, userMessage]
-        })
+        await syncChat(activeLead.id, userMessage)
 
         setInput('')
         setIsThinking(true)
@@ -167,48 +142,37 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
         const aiMessage = { role: 'ai' as const, message: aiResponse }
 
-        // Update score in real-time even if not finished
-        const currentLeadState = { ...activeLead, ...leadUpdates }
-        leadUpdates.aiScore = calculateScore(currentLeadState)
-
-        updateLead(activeLead.id, {
-            ...leadUpdates,
-            chatHistory: [...currentHistory, userMessage, aiMessage]
-        })
+        // Update score and status in Supabase
+        await updateLead(activeLead.id, leadUpdates)
+        // Sync AI response
+        await syncChat(activeLead.id, aiMessage)
 
         setStep(nextStep)
         setIsThinking(false)
     }
 
-    const handleContractButton = (contractType: string) => {
+    const handleContractButton = async (contractType: string) => {
         if (!activeLead || step !== 'contract') return
 
         const userMessage = { role: 'user' as const, message: contractType }
-        const updatedHistory = [...(activeLead.chatHistory || []), userMessage]
-
         const aiMessage = { role: 'ai' as const, message: t('chat_contract_success') }
 
-        updateLead(activeLead.id, {
-            contractType,
-            chatHistory: [...updatedHistory, aiMessage]
-        })
+        await syncChat(activeLead.id, userMessage)
+        await updateLead(activeLead.id, { contractType })
+        await syncChat(activeLead.id, aiMessage)
 
         setStep('guarantor')
     }
 
-    const handleGuarantorButton = (answer: 'Oui' | 'Non') => {
+    const handleGuarantorButton = async (answer: 'Oui' | 'Non') => {
         if (!activeLead || step !== 'guarantor') return
 
         const userMessage = { role: 'user' as const, message: answer }
-        const updatedHistory = [...(activeLead.chatHistory || []), userMessage]
-
-        const hasGuarantor = answer === 'Oui'
         const aiMessage = { role: 'ai' as const, message: t('chat_guarantor_success') }
 
-        updateLead(activeLead.id, {
-            hasGuarantor,
-            chatHistory: [...updatedHistory, aiMessage]
-        })
+        await syncChat(activeLead.id, userMessage)
+        await updateLead(activeLead.id, { hasGuarantor: answer === 'Oui' })
+        await syncChat(activeLead.id, aiMessage)
 
         setStep('entry_date')
     }
@@ -246,7 +210,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-2" ref={scrollRef}>
                     {activeLead?.chatHistory?.map((msg: { role: 'user' | 'ai', message: string }, i: number) => (
-                        <MessageBubble key={i} {...msg} onEdit={() => msg.role === 'user' ? handleEditMessage(i) : undefined} />
+                        <MessageBubble key={i} {...msg} />
                     ))}
                     {isThinking && (
                         <div className="flex items-start gap-3 animate-pulse">

@@ -3,11 +3,16 @@
 import React from 'react'
 import { KanbanBoard } from '../../components/kanban/Board'
 import { Plus, Filter, Search } from 'lucide-react'
-
+import { useStore } from '../../store/useStore'
 import { useLanguage } from '../../i18n/LanguageContext'
 
 export default function KanbanPage() {
     const { t } = useLanguage()
+    const { fetchLeads } = useStore()
+
+    React.useEffect(() => {
+        fetchLeads()
+    }, [fetchLeads])
 
     return (
         <div className="flex flex-col h-full md:h-[calc(100vh-160px)] space-y-4 md:space-y-6">
