@@ -32,7 +32,7 @@ const translations: Record<Language, Record<string, string>> = {
         side_share: "Partager Lien",
         side_link_copied: "Lien Copié !",
         side_link_desc: "Lien de candidature prêt à être envoyé.",
-        "side_user_role": "Masterclass",
+        "side_user_role": "Administrateur",
 
         // Dashboard
         "dash_title": "Tableau de Bord",
@@ -140,20 +140,20 @@ const translations: Record<Language, Record<string, string>> = {
         common_new: "Nouveau",
 
         // Settings
-        settings_title: "Settings",
-        settings_subtitle: "Manage your preferences and account settings.",
-        settings_general: "General",
-        settings_username: "Username",
+        settings_title: "Paramètres",
+        settings_subtitle: "Gérez vos préférences et les réglages de votre compte.",
+        settings_general: "Général",
+        settings_username: "Nom d'utilisateur",
         settings_email: "Email",
         settings_notifications: "Notifications",
-        settings_new_leads: "New leads",
-        settings_upcoming_visits: "Upcoming visits",
-        settings_pipeline_updates: "Pipeline updates",
-        settings_save: "Save changes",
-        settings_admin_title: "Danger Zone (Admin)",
-        settings_reset_db: "Reset Database",
-        settings_reset_confirm: "Are you sure you want to delete ALL data? This action is irreversible.",
-        settings_reset_success: "Database has been reset successfully.",
+        settings_new_leads: "Nouveaux leads",
+        settings_upcoming_visits: "Prochaines visites",
+        settings_pipeline_updates: "Mises à jour du pipeline",
+        settings_save: "Enregistrer les modifications",
+        settings_admin_title: "Zone de Danger (Admin)",
+        settings_reset_db: "Réinitialiser la base de données",
+        settings_reset_confirm: "Êtes-vous sûr de vouloir supprimer TOUTES les données ? Cette action est irréversible.",
+        settings_reset_success: "La base de données a été remise à zéro.",
     },
     en: {
         // Navbar
@@ -176,7 +176,7 @@ const translations: Record<Language, Record<string, string>> = {
         side_share: "Share Link",
         side_link_copied: "Link Copied!",
         side_link_desc: "Application link ready to send.",
-        "side_user_role": "Masterclass",
+        "side_user_role": "Administrator",
 
         // Dashboard
         "dash_title": "Dashboard",
