@@ -13,6 +13,7 @@ export interface Lead {
     contractType?: 'CDI' | 'CDD' | 'Alternance' | 'Intérim' | 'Indépendant' | 'Stage' | string;
     hasGuarantor?: boolean;
     entryDate?: string;
+    visitTime?: string;
     email?: string;
     phone?: string;
     aiScore: number;
@@ -112,6 +113,7 @@ export const useStore = create<EliteStore>((set, get) => ({
                     contractType: lead.contract_type,
                     hasGuarantor: lead.has_guarantor,
                     entryDate: lead.entry_date,
+                    visitTime: lead.visit_time,
                     email: lead.email,
                     phone: lead.phone,
                     aiScore: lead.ai_score,
@@ -152,6 +154,7 @@ export const useStore = create<EliteStore>((set, get) => ({
                 contract_type: lead.contractType,
                 has_guarantor: lead.hasGuarantor,
                 entry_date: lead.entryDate,
+                visit_time: lead.visitTime,
                 email: lead.email,
                 phone: lead.phone,
                 ai_score: lead.aiScore,
@@ -185,6 +188,7 @@ export const useStore = create<EliteStore>((set, get) => ({
             if (updates.contractType !== undefined) supabaseUpdates.contract_type = updates.contractType
             if (updates.hasGuarantor !== undefined) supabaseUpdates.has_guarantor = updates.hasGuarantor
             if (updates.entryDate !== undefined) supabaseUpdates.entry_date = updates.entryDate
+            if (updates.visitTime !== undefined) supabaseUpdates.visit_time = updates.visitTime
             if (updates.email !== undefined) supabaseUpdates.email = updates.email
             if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone
             if (updates.aiScore !== undefined) supabaseUpdates.ai_score = updates.aiScore

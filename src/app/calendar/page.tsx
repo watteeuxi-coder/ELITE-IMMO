@@ -27,7 +27,7 @@ interface Visit {
 import { useLanguage } from '../../i18n/LanguageContext'
 
 export default function CalendarPage() {
-    const { leads } = useStore()
+    const { leads, updateLead } = useStore()
     const { t, language } = useLanguage()
     const router = useRouter()
 
@@ -92,7 +92,7 @@ export default function CalendarPage() {
                     leadId: lead.id,
                     leadName: lead.name || 'Prospect',
                     property: t('calendar_default_activity'),
-                    time: '10:00', // Default time
+                    time: lead.visitTime || '10:00', // Use visitTime from lead
                     date: parsedDate,
                     aiScore: lead.aiScore || 0,
                     phone: lead.phone,
@@ -452,9 +452,18 @@ export default function CalendarPage() {
                                             </div>
                                         </div>
                                         <h4 className="text-2xl font-black text-foreground mb-1">{selectedVisit.leadName}</h4>
-                                        <div className="flex items-center gap-2 px-4 py-1.5 bg-secondary/50 rounded-full text-xs font-bold text-muted-foreground">
-                                            <Clock className="w-3.5 h-3.5" />
-                                            <span>{selectedVisit.time}</span>
+                                        <div className="flex flex-col items-center gap-2">
+                                            <input
+                                                type="time"
+                                                value={selectedVisit.time}
+                                                onChange={(e) => {
+                                                    const newTime = e.target.value
+                                                    updateLead(selectedVisit.id, { visitTime: newTime })
+                                                    setSelectedVisit({ ...selectedVisit, time: newTime })
+                                                }}
+                                                className="bg-secondary/50 px-4 py-2 rounded-xl text-sm font-bold text-[#7084FF] border border-[#7084FF]/20 focus:outline-none focus:ring-2 focus:ring-[#7084FF]/30 transition-all text-center"
+                                            />
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase">{language === 'fr' ? 'Modifier l\'heure' : 'Change time'}</p>
                                         </div>
                                     </div>
                                 </div>
