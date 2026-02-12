@@ -1,4 +1,5 @@
 "use client"
+// Trigger redeploy: 2026-02-12 20:53
 
 import React, { useState, useEffect } from 'react'
 import { useLanguage } from '../../i18n/LanguageContext'
