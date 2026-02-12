@@ -123,17 +123,18 @@ export function Sidebar() {
                         <span className="font-bold text-sm text-primary">{t('side_share')}</span>
                     </button>
 
-                    {/* Reset Database Button */}
+                </nav>
+
+                <div className="pt-6 border-t border-border mt-auto space-y-2">
+                    {/* Reset Database Button - Fixed at bottom */}
                     <button
                         onClick={handleReset}
-                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-red-50 text-red-500 hover:bg-red-100 transition-all duration-300 border border-red-100 mt-2"
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all mb-2"
                     >
                         <RefreshCw className="w-5 h-5" />
                         <span className="font-bold text-sm">{t('side_reset') || 'Réinitialiser'}</span>
                     </button>
-                </nav>
 
-                <div className="pt-6 border-t border-border mt-auto space-y-2">
                     <Link
                         href="/settings"
                         onClick={() => setSidebarOpen(false)}
@@ -179,56 +180,57 @@ export function Sidebar() {
                     </div>
                 )}
 
-                {/* Modal Components */}
-                <Modal
-                    isOpen={isResetModalOpen}
-                    onClose={() => setIsResetModalOpen(false)}
-                    title={t('settings_reset_confirm') || 'Réinitialisation'}
-                >
-                    <div className="space-y-6 text-center">
-                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <ShieldAlert className="w-8 h-8 text-red-500" />
-                        </div>
-                        <p className="text-muted-foreground">Cette action supprimera tous les prospects et réinitialisera l'application. Cette opération est irréversible.</p>
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => setIsResetModalOpen(false)}
-                                className="flex-1 py-4 rounded-2xl font-bold bg-secondary text-foreground hover:bg-secondary/70 transition-all"
-                            >
-                                Annuler
-                            </button>
-                            <button
-                                onClick={confirmReset}
-                                className="flex-1 py-4 rounded-2xl font-bold bg-red-500 text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all"
-                            >
-                                Réinitialiser
-                            </button>
-                        </div>
-                    </div>
-                </Modal>
+            </div>
 
-                <Modal
-                    isOpen={isLogoutModalOpen}
-                    onClose={() => setIsLogoutModalOpen(false)}
-                    title="Déconnexion"
-                >
-                    <div className="space-y-6 text-center py-4">
-                        <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <LogOut className="w-8 h-8 text-primary" />
-                        </div>
-                        <div>
-                            <p className="font-bold text-lg text-foreground mb-1">Mode Démo Elite</p>
-                            <p className="text-sm text-muted-foreground">La déconnexion est simulée dans cet environnement de démonstration.</p>
-                        </div>
+            {/* Modal Components - Outside the Sidebar div for global centering */}
+            <Modal
+                isOpen={isResetModalOpen}
+                onClose={() => setIsResetModalOpen(false)}
+                title={t('settings_reset_confirm') || 'Réinitialisation'}
+            >
+                <div className="space-y-6 text-center">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <ShieldAlert className="w-8 h-8 text-red-500" />
+                    </div>
+                    <p className="text-muted-foreground">Cette action supprimera tous les prospects et réinitialisera l'application. Cette opération est irréversible.</p>
+                    <div className="flex gap-4">
                         <button
-                            onClick={() => setIsLogoutModalOpen(false)}
-                            className="w-full py-4 rounded-2xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+                            onClick={() => setIsResetModalOpen(false)}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-secondary text-foreground hover:bg-secondary/70 transition-all"
                         >
-                            Continuer l'exploration
+                            Annuler
+                        </button>
+                        <button
+                            onClick={confirmReset}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-red-500 text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all"
+                        >
+                            Réinitialiser
                         </button>
                     </div>
-                </Modal>
-            </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                title="Déconnexion"
+            >
+                <div className="space-y-6 text-center py-4">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <LogOut className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                        <p className="font-bold text-lg text-foreground mb-1">Mode Démo Elite</p>
+                        <p className="text-sm text-muted-foreground">La déconnexion est simulée dans cet environnement de démonstration.</p>
+                    </div>
+                    <button
+                        onClick={() => setIsLogoutModalOpen(false)}
+                        className="w-full py-4 rounded-2xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+                    >
+                        Continuer l'exploration
+                    </button>
+                </div>
+            </Modal>
         </>
     )
 }

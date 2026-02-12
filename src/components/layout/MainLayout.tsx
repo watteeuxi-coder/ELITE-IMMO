@@ -3,7 +3,6 @@
 import React from 'react'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from './Sidebar'
-import { MobileSidebar } from './MobileSidebar'
 import { Navbar } from './Navbar'
 import { cn } from '../../lib/utils'
 import { LanguageSelector } from './LanguageSelector'
@@ -26,15 +25,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen bg-[#F8FAFC] relative">
 
-            {/* Desktop Sidebar */}
-            <div className="hidden md:block">
-                <Sidebar />
-            </div>
-
-            {/* Mobile Sidebar Trigger & Overlay */}
-            <div className="md:hidden">
-                <MobileSidebar />
-            </div>
+            <Sidebar />
 
             {/* Main Content Area */}
             <div className={cn(
