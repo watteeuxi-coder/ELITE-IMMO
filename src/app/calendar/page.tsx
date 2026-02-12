@@ -51,17 +51,18 @@ export default function CalendarPage() {
         return leads
             .filter((lead: Lead) => lead.entryDate && lead.entryDate.trim() !== '')
             .map((lead: Lead) => {
+                const dateStr = lead.entryDate || ''
                 let parsedDate: Date
 
                 // Try parsing different date formats
                 try {
                     // Try DD/MM/YYYY format first
-                    if (lead.entryDate.includes('/')) {
-                        parsedDate = parse(lead.entryDate, 'dd/MM/yyyy', new Date())
+                    if (dateStr.includes('/')) {
+                        parsedDate = parse(dateStr, 'dd/MM/yyyy', new Date())
                     }
                     // Try ISO format
-                    else if (lead.entryDate.includes('-')) {
-                        parsedDate = new Date(lead.entryDate)
+                    else if (dateStr.includes('-')) {
+                        parsedDate = new Date(dateStr)
                     }
                     // Try natural language or fallback
                     else {
