@@ -190,7 +190,7 @@ export default function CalendarPage() {
 
             <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
                 {/* Calendar or Weekly View */}
-                <div className="xl:col-span-8 glass p-10 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+                <div className="xl:col-span-8 glass p-6 md:p-8 rounded-[3rem] shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-[#7084FF]/5 rounded-full blur-3xl -mr-32 -mt-32 transition-all group-hover:bg-[#7084FF]/10" />
                     <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl -ml-32 -mb-32 transition-all group-hover:bg-purple-500/10" />
 
@@ -198,7 +198,7 @@ export default function CalendarPage() {
                         <div className="relative">
                             <style jsx global>{`
             .rdp {
-              --rdp-cell-size: 75px;
+              --rdp-cell-size: 90px;
               --rdp-accent-color: #7084FF;
               --rdp-background-color: rgba(112, 132, 255, 0.1);
               font-family: inherit;
@@ -328,7 +328,7 @@ export default function CalendarPage() {
                                     {/* Time Grid */}
                                     <div className="space-y-3">
                                         {timeSlots.map((hour) => (
-                                            <div key={hour} className="grid grid-cols-8 gap-4 min-h-[80px]">
+                                            <div key={hour} className="grid grid-cols-8 gap-4 min-h-[55px]">
                                                 {/* Time label */}
                                                 <div className="flex items-center justify-center">
                                                     <span className="text-sm font-black text-muted-foreground/60">{hour}:00</span>
