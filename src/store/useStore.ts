@@ -9,10 +9,10 @@ export interface ChatMessage {
 export interface Lead {
     id: string;
     name: string;
-    income: number;
-    contractType: 'CDI' | 'CDD' | 'Alternance' | 'Intérim' | 'Indépendant' | 'Stage' | string;
-    hasGuarantor: boolean;
-    entryDate: string;
+    income?: number;
+    contractType?: 'CDI' | 'CDD' | 'Alternance' | 'Intérim' | 'Indépendant' | 'Stage' | string;
+    hasGuarantor?: boolean;
+    entryDate?: string;
     email?: string;
     phone?: string;
     aiScore: number;
@@ -40,7 +40,11 @@ interface EliteStore {
     setActiveLead: (id: string | null) => void;
     calculateScore: (lead: Partial<Lead>) => number;
     syncChat: (leadId: string, message: ChatMessage) => Promise<void>;
+    replaceChatHistory: (leadId: string, history: ChatMessage[]) => Promise<void>;
     resetDatabase: () => Promise<void>;
+    isSidebarOpen: boolean;
+    toggleSidebar: () => void;
+    setSidebarOpen: (open: boolean) => void;
 
     // Notifications
     notifications: EliteNotification[];
@@ -55,6 +59,9 @@ export const useStore = create<EliteStore>((set, get) => ({
     notifications: [],
     activeLead: null,
     isLoading: false,
+    isSidebarOpen: false,
+    toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
+    setSidebarOpen: (open) => set({ isSidebarOpen: open }),
 
     fetchLeads: async () => {
         set({ isLoading: true })
@@ -222,32 +229,31 @@ export const useStore = create<EliteStore>((set, get) => ({
         }
     },
 
-    setActiveLead: (id) => set({ activeLead: id }),
+    replaceChatHistory: async (leadId, history) => {
+        try {
+            // Delete all current messages for this lead
+            await supabase.from('chat_messages').delete().eq('lead_id', leadId)
 
-    calculateScore: (lead) => {
-        let score = 0;
-        if (lead.income && lead.income >= 3000) score += 40;
-        else if (lead.income && lead.income >= 2000) score += 20;
-        else if (lead.income && lead.income >= 1500) score += 10;
+            // Re-insert the new history
+            if (history.length > 0) {
+                const { error } = await supabase.from('chat_messages').insert(
+                    history.map(msg => ({
+                        lead_id: leadId,
+                        role: msg.role,
+                        message: msg.message
+                    }))
+                )
+                if (error) throw error
+            }
 
-        const contractScores: Record<string, number> = {
-            'CDI': 30,
-            'Alternance': 15,
-            'CDD': 15,
-            'Indépendant': 15,
-            'Intérim': 15,
-            'Stage': 15,
-        };
-
-        if (lead.contractType) {
-            score += contractScores[lead.contractType] || 7.5;
+            set((state) => ({
+                leads: state.leads.map((l) =>
+                    l.id === leadId ? { ...l, chatHistory: history } : l
+                )
+            }))
+        } catch (error) {
+            console.error('Error replacing chat history:', error)
         }
-
-        if (lead.hasGuarantor) score += 20;
-        if (lead.name && lead.name !== 'Nouveau Prospect' && lead.name !== '') score += 5;
-        if (lead.entryDate) score += 5;
-
-        return Math.min(score, 100);
     },
 
     resetDatabase: async () => {

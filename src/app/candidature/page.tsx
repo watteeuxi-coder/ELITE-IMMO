@@ -20,12 +20,8 @@ export default function CandidaturePage() {
                 name: '',
                 status: 'new' as const,
                 aiScore: 0,
-                income: 0,
-                contractType: 'CDI' as const,
-                hasGuarantor: false,
-                entryDate: '',
                 chatHistory: []
-            }
+            } as any
             addLead(newLead)
             setActiveLead(newLeadId)
             setCurrentLeadId(newLeadId)

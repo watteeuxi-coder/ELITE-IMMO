@@ -15,7 +15,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const [isThinking, setIsThinking] = useState(false)
     const [editingIndex, setEditingIndex] = useState<number | null>(null)
     const [step, setStep] = useState<ConversationStep>('greeting')
-    const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat } = useStore()
+    const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat, replaceChatHistory } = useStore()
     const scrollRef = useRef<HTMLDivElement>(null)
 
     // Use provided leadId, or activeLead from store, or first lead
@@ -48,55 +48,43 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 else if (activeLead.entryDate) setStep('email')
                 else if (activeLead.hasGuarantor !== undefined) setStep('entry_date')
                 else if (activeLead.contractType) setStep('guarantor')
-                else if (activeLead.income > 0) setStep('contract')
-                else if (activeLead.name) setStep('income')
+                else if (activeLead.income !== undefined && activeLead.income > 0) setStep('contract')
+                else if (activeLead.name && activeLead.name !== 'Nouveau Prospect') setStep('income')
                 else setStep('name')
             }, 0)
         }
     }, [activeLead])
 
-    const handleSend = async () => {
-        if (!input.trim() || !activeLead || isThinking) return
-
-        const userMessage = { role: 'user' as const, message: input }
-        await syncChat(activeLead.id, userMessage)
-
-        setInput('')
-        setIsThinking(true)
-
-        // Simulate thinking delay
-        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1000))
-
+    const runAIPipeline = async (currentStep: ConversationStep, userInput: string, currentLead: Lead) => {
         let aiResponse = ''
-        let nextStep: ConversationStep = step
+        let nextStep: ConversationStep = currentStep
         const leadUpdates: Partial<Lead> = {}
-
-        const lowerInput = input.toLowerCase()
+        const lowerInput = userInput.toLowerCase()
 
         // Robustness: Generic "I didn't understand" if input is too short or weird (demo logic)
-        const isWeirdInput = input.length < 2 && step !== 'guarantor'
+        const isWeirdInput = userInput.length < 2 && currentStep !== 'guarantor'
 
         if (isWeirdInput) {
             aiResponse = t('chat_generic_error')
-            nextStep = step
-        } else if (step === 'guarantor' && (lowerInput.includes('c\'est quoi') || lowerInput.includes('qu\'est-ce') || lowerInput.includes('comprends pas') || lowerInput.includes('what is') || lowerInput.includes('don\'t understand'))) {
+            nextStep = currentStep
+        } else if (currentStep === 'guarantor' && (lowerInput.includes('c\'est quoi') || lowerInput.includes('qu\'est-ce') || lowerInput.includes('comprends pas') || lowerInput.includes('what is') || lowerInput.includes('don\'t understand'))) {
             aiResponse = t('chat_guarantor_explain')
             nextStep = 'guarantor'
         } else {
-            switch (step) {
+            switch (currentStep) {
                 case 'name':
                     if (lowerInput.includes('non') || lowerInput.includes('rien') || lowerInput.includes('no') || lowerInput.includes('nothing')) {
                         aiResponse = t('chat_name_demand')
                         nextStep = 'name'
                     } else {
-                        leadUpdates.name = input
-                        aiResponse = t('chat_name_nice').replace('{name}', input)
+                        leadUpdates.name = userInput
+                        aiResponse = t('chat_name_nice').replace('{name}', userInput)
                         nextStep = 'income'
                     }
                     break
 
                 case 'income':
-                    const income = parseInt(input.replace(/[^\d]/g, ''))
+                    const income = parseInt(userInput.replace(/[^\d]/g, ''))
                     if (isNaN(income) || income < 100) {
                         aiResponse = t('chat_income_error')
                         nextStep = 'income'
@@ -137,11 +125,11 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                     break
 
                 case 'entry_date':
-                    if (input.length < 3) {
+                    if (userInput.length < 3) {
                         aiResponse = t('chat_date_error')
                         nextStep = 'entry_date'
                     } else {
-                        leadUpdates.entryDate = input
+                        leadUpdates.entryDate = userInput
                         aiResponse = t('chat_email_ask')
                         nextStep = 'email'
                     }
@@ -149,11 +137,11 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
                 case 'email':
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                    if (!emailRegex.test(input.trim())) {
+                    if (!emailRegex.test(userInput.trim())) {
                         aiResponse = t('chat_email_error')
                         nextStep = 'email'
                     } else {
-                        leadUpdates.email = input.trim()
+                        leadUpdates.email = userInput.trim()
                         aiResponse = t('chat_phone_ask')
                         nextStep = 'phone'
                     }
@@ -161,15 +149,14 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
                 case 'phone':
                     const phoneRegex = /^[\d\s+\-.]{8,}$/
-                    if (!phoneRegex.test(input.trim())) {
+                    if (!phoneRegex.test(userInput.trim())) {
                         aiResponse = t('chat_phone_error')
                         nextStep = 'phone'
                     } else {
-                        leadUpdates.phone = input.trim()
-                        const tempLead = { ...activeLead, ...leadUpdates }
+                        leadUpdates.phone = userInput.trim()
+                        const tempLead = { ...currentLead, ...leadUpdates }
                         const finalScore = calculateScore(tempLead)
                         leadUpdates.aiScore = finalScore
-                        // Only set to 'qualified' if score >= 80
                         leadUpdates.status = finalScore >= 80 ? 'qualified' : 'new'
                         aiResponse = t('chat_complete').replace('{score}', finalScore.toString()) + " " + (finalScore >= 80 ? t('chat_complete_high') : t('chat_complete_low'))
                         nextStep = 'complete'
@@ -181,6 +168,23 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             }
         }
 
+        return { aiResponse, nextStep, leadUpdates }
+    }
+
+    const handleSend = async () => {
+        if (!input.trim() || !activeLead || isThinking) return
+
+        const userMessage = { role: 'user' as const, message: input }
+        await syncChat(activeLead.id, userMessage)
+
+        setInput('')
+        setIsThinking(true)
+
+        // Simulate thinking delay
+        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1000))
+
+        const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, input, activeLead)
+
         const aiMessage = { role: 'ai' as const, message: aiResponse }
 
         // Update score and status in Supabase
@@ -188,7 +192,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         // Sync AI response
         await syncChat(activeLead.id, aiMessage)
 
-        if (nextStep === 'complete') {
+        if (nextStep === 'complete' && step !== 'complete') {
             useStore.getState().addNotification({
                 lead_id: activeLead.id,
                 type: 'qualified',
@@ -198,6 +202,59 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
         setStep(nextStep)
         setIsThinking(false)
+    }
+
+    const handleEditMessage = async (index: number, newMessage: string) => {
+        if (!activeLead || isThinking) return
+
+        setIsThinking(true)
+
+        // 1. Determine local history up to the edited message
+        const history = [...activeLead.chatHistory]
+        history[index] = { role: 'user', message: newMessage }
+
+        // 2. Remove all messages after the edited message (to maintain flow)
+        const prunedHistory = history.slice(0, index + 1)
+
+        // 3. Determine the step we are at based on the pruned history
+        // We evaluate fields one by one to find the current step
+        // We'll reset fields in lead but keep the ID
+
+        // Re-calculate the whole lead state based on pruned history (simplified for now)
+        // In a real app we'd re-run the pipeline for each user message in the pruned history
+        // For the demo: we'll just re-run the pipeline FOR THE EDITED MESSAGE
+        // We need to know which step that message belonged to.
+
+        // Let's find the step by looking at how many user messages are before it
+        const userMessagesBefore = prunedHistory.filter(m => m.role === 'user').length - 1
+        const stepsOrder: ConversationStep[] = ['name', 'income', 'contract', 'guarantor', 'entry_date', 'email', 'phone']
+        const currentStepForEdit = stepsOrder[userMessagesBefore] || 'name'
+
+        // Reset the dynamic data from that step onwards
+        const resetUpdates: Partial<Lead> = {}
+        stepsOrder.slice(userMessagesBefore).forEach(s => {
+            if (s === 'name') resetUpdates.name = 'Nouveau Prospect'
+            if (s === 'income') resetUpdates.income = undefined
+            if (s === 'contract') resetUpdates.contractType = undefined
+            if (s === 'guarantor') resetUpdates.hasGuarantor = undefined
+            if (s === 'entry_date') resetUpdates.entryDate = undefined
+            if (s === 'email') resetUpdates.email = undefined
+            if (s === 'phone') resetUpdates.phone = undefined
+        })
+
+        await updateLead(activeLead.id, resetUpdates)
+
+        // Re-run the pipeline for the NEW text
+        const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(currentStepForEdit, newMessage, activeLead)
+
+        const finalHistory = [...prunedHistory, { role: 'ai' as const, message: aiResponse }]
+
+        await replaceChatHistory(activeLead.id, finalHistory)
+        await updateLead(activeLead.id, leadUpdates)
+
+        setStep(nextStep)
+        setIsThinking(false)
+        setEditingIndex(null)
     }
 
     const handleContractButton = async (contractType: string) => {
@@ -259,7 +316,14 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-2" ref={scrollRef}>
                     {activeLead?.chatHistory?.map((msg: { role: 'user' | 'ai', message: string }, i: number) => (
-                        <MessageBubble key={i} {...msg} />
+                        <MessageBubble
+                            key={i}
+                            {...msg}
+                            onEdit={msg.role === 'user' ? () => {
+                                setEditingIndex(i)
+                                setInput(msg.message)
+                            } : undefined}
+                        />
                     ))}
                     {isThinking && (
                         <div className="flex items-start gap-3 animate-pulse">
@@ -339,14 +403,29 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    if (editingIndex !== null) {
+                                        handleEditMessage(editingIndex, input)
+                                    } else {
+                                        handleSend()
+                                    }
+                                }
+                                if (e.key === 'Escape' && editingIndex !== null) {
+                                    setEditingIndex(null)
+                                    setInput('')
+                                }
+                            }}
                             placeholder={editingIndex !== null ? t('chat_edit_placeholder') : t('chat_placeholder')}
-                            className="w-full pr-12 pl-4 py-3 md:py-3.5 border-2 border-border bg-white/80 rounded-2xl focus:outline-none focus:border-primary transition-all placeholder:text-muted-foreground/50 text-base font-medium"
+                            className={cn(
+                                "w-full pr-12 pl-4 py-3 md:py-3.5 border-2 bg-white/80 rounded-2xl focus:outline-none transition-all placeholder:text-muted-foreground/50 text-base font-medium",
+                                editingIndex !== null ? "border-primary ring-2 ring-primary/10" : "border-border focus:border-primary"
+                            )}
                             disabled={isThinking}
                             style={{ fontSize: '16px' }} // Prevent iOS zoom
                         />
                         <button
-                            onClick={handleSend}
+                            onClick={() => editingIndex !== null ? handleEditMessage(editingIndex, input) : handleSend()}
                             disabled={!input.trim() || isThinking}
                             className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 md:w-10 md:h-10 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed rounded-xl flex items-center justify-center transition-all shadow-lg shadow-primary/20"
                         >
@@ -382,10 +461,10 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
                             <div className="flex items-center justify-between mb-2">
                                 <span className="text-xs text-muted-foreground font-medium">{t('chat_monthly_income')}</span>
-                                {activeLead.income > 0 && <BadgeCheck className="w-4 h-4 text-green-500" />}
+                                {activeLead.income !== undefined && activeLead.income > 0 && <BadgeCheck className="w-4 h-4 text-green-500" />}
                             </div>
                             <p className="text-sm font-bold text-foreground">
-                                {activeLead.income > 0 ? `${activeLead.income}€/mois` : '—'}
+                                {activeLead.income !== undefined && activeLead.income > 0 ? `${activeLead.income}€/mois` : '—'}
                             </p>
                         </div>
 

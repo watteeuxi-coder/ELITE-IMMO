@@ -198,11 +198,21 @@ export default function CalendarPage() {
                         <div className="relative">
                             <style jsx global>{`
             .rdp {
-              --rdp-cell-size: 90px;
+              --rdp-cell-size: 55px; /* Mobile size */
               --rdp-accent-color: #7084FF;
               --rdp-background-color: rgba(112, 132, 255, 0.1);
               font-family: inherit;
               margin: 0 auto;
+            }
+            @media (min-width: 768px) {
+              .rdp {
+                --rdp-cell-size: 80px;
+              }
+            }
+            @media (min-width: 1280px) {
+              .rdp {
+                --rdp-cell-size: 90px;
+              }
             }
             .rdp-months {
               justify-content: center;
@@ -228,11 +238,17 @@ export default function CalendarPage() {
               padding: 0.4rem;
             }
             .rdp-day {
-              border-radius: 20px;
+              border-radius: 12px;
               font-weight: 700;
               transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-              font-size: 1.125rem;
+              font-size: 0.9rem;
               border: 2px solid transparent;
+            }
+            @media (min-width: 768px) {
+              .rdp-day {
+                border-radius: 20px;
+                font-size: 1.125rem;
+              }
             }
             .rdp-day:hover:not(.rdp-day_selected) {
               background-color: rgba(112, 132, 255, 0.08);
