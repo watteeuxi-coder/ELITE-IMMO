@@ -14,7 +14,8 @@ import {
     Share2,
     Check,
     RefreshCw,
-    ShieldAlert
+    ShieldAlert,
+    X
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useLanguage } from '../../i18n/LanguageContext'
