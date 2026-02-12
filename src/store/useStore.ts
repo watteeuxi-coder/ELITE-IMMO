@@ -207,6 +207,34 @@ export const useStore = create<EliteStore>((set, get) => ({
         }
     },
 
+    setActiveLead: (id) => set({ activeLead: id }),
+
+    calculateScore: (lead) => {
+        let score = 0;
+        if (lead.income && lead.income >= 3000) score += 40;
+        else if (lead.income && lead.income >= 2000) score += 20;
+        else if (lead.income && lead.income >= 1500) score += 10;
+
+        const contractScores: Record<string, number> = {
+            'CDI': 30,
+            'Alternance': 15,
+            'CDD': 15,
+            'Indépendant': 15,
+            'Intérim': 15,
+            'Stage': 15,
+        };
+
+        if (lead.contractType) {
+            score += contractScores[lead.contractType] || 7.5;
+        }
+
+        if (lead.hasGuarantor !== undefined && lead.hasGuarantor === true) score += 20;
+        if (lead.name && lead.name !== 'Nouveau Prospect' && lead.name !== '') score += 5;
+        if (lead.entryDate) score += 5;
+
+        return Math.min(score, 100);
+    },
+
     syncChat: async (leadId, message) => {
         try {
             const { error } = await supabase.from('chat_messages').insert([{
