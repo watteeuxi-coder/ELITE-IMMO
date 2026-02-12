@@ -77,6 +77,13 @@ export function Sidebar() {
                         </div>
                         <span className="font-black text-xl tracking-tight text-[#7084FF]">ELITE-IMMO</span>
                     </div>
+                    {/* Mobile Only Close Button */}
+                    <button
+                        onClick={() => setSidebarOpen(false)}
+                        className="p-2 -mr-2 text-muted-foreground hover:text-foreground md:hidden"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
                 </div>
 
                 <nav className="flex-1 space-y-2">
@@ -117,15 +124,6 @@ export function Sidebar() {
                 </nav>
 
                 <div className="pt-6 border-t border-border mt-auto space-y-2">
-                    {/* Reset Button (Sidebar requested by user) */}
-                    <button
-                        onClick={handleReset}
-                        className="flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all text-red-500 hover:bg-red-50"
-                    >
-                        <RefreshCw className="w-5 h-5" />
-                        <span className="font-bold text-sm">{t('side_reset')}</span>
-                    </button>
-
                     <Link
                         href="/settings"
                         onClick={() => setSidebarOpen(false)}
@@ -172,33 +170,6 @@ export function Sidebar() {
                 )}
 
                 {/* Modal Components */}
-                <Modal
-                    isOpen={isResetModalOpen}
-                    onClose={() => setIsResetModalOpen(false)}
-                    title={t('settings_reset_confirm') || 'Réinitialisation'}
-                >
-                    <div className="space-y-6">
-                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                            <ShieldAlert className="w-8 h-8 text-red-500" />
-                        </div>
-                        <p className="text-center text-muted-foreground">Cette action supprimera tous les prospects et réinitialisera l'application. Cette opération est irréversible.</p>
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => setIsResetModalOpen(false)}
-                                className="flex-1 py-4 rounded-2xl font-bold bg-secondary text-foreground hover:bg-secondary/70 transition-all"
-                            >
-                                Annuler
-                            </button>
-                            <button
-                                onClick={confirmReset}
-                                className="flex-1 py-4 rounded-2xl font-bold bg-red-500 text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all"
-                            >
-                                Réinitialiser
-                            </button>
-                        </div>
-                    </div>
-                </Modal>
-
                 <Modal
                     isOpen={isLogoutModalOpen}
                     onClose={() => setIsLogoutModalOpen(false)}
