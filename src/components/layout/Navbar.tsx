@@ -1,11 +1,12 @@
 "use client"
 
 import React, { useState } from 'react'
-import { Search, Bell, Settings, PlusCircle } from 'lucide-react'
+import { Search, Bell, Settings, PlusCircle, User } from 'lucide-react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { cn } from '../../lib/utils'
-import { useStore } from '../../store/useStore'
+import { useStore, Lead } from '../../store/useStore'
 import { useLanguage } from '../../i18n/LanguageContext'
 import { LanguageSelector } from './LanguageSelector'
 import { useEffect } from 'react'
@@ -14,8 +15,17 @@ export function Navbar() {
     const { t, language } = useLanguage()
     const [showNotifications, setShowNotifications] = useState(false)
     const router = useRouter()
-    const { addLead, notifications, markAllNotificationsAsRead, fetchNotifications } = useStore()
+    const { addLead, notifications, markAllNotificationsAsRead, fetchNotifications, leads } = useStore()
+    const [searchTerm, setSearchTerm] = useState('')
+    const [showSuggestions, setShowSuggestions] = useState(false)
     const unreadCount = notifications.filter(n => !n.is_read).length
+
+    const suggestions = useMemo(() => {
+        if (searchTerm.length < 1) return []
+        return leads.filter((lead: Lead) =>
+            lead.name.toLowerCase().includes(searchTerm.toLowerCase())
+        ).slice(0, 5)
+    }, [leads, searchTerm])
 
     useEffect(() => {
         fetchNotifications()
@@ -23,7 +33,7 @@ export function Navbar() {
 
     const handleQuickAddLead = () => {
         const newLead = {
-            id: crypto.randomUUID(),
+            id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
             name: 'Nouveau Prospect',
             income: 0,
             contractType: 'CDI' as const,
@@ -44,9 +54,43 @@ export function Navbar() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <input
                         type="text"
+                        value={searchTerm}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value)
+                            setShowSuggestions(true)
+                        }}
+                        onFocus={() => setShowSuggestions(true)}
                         placeholder={t('nav_search')}
                         className="w-full pl-12 pr-4 py-3 bg-white border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#7084FF]/20 focus:border-[#7084FF] transition-all text-sm shadow-sm"
                     />
+
+                    {/* Search Suggestions Autocomplete */}
+                    {showSuggestions && suggestions.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            {suggestions.map((lead) => (
+                                <button
+                                    key={lead.id}
+                                    onClick={() => {
+                                        router.push(`/leads?id=${lead.id}`)
+                                        setSearchTerm('')
+                                        setShowSuggestions(false)
+                                    }}
+                                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-colors border-b border-border last:border-0 text-left"
+                                >
+                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                                        <User className="w-4 h-4 text-primary" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-bold text-foreground truncate">{lead.name}</p>
+                                        <p className="text-[10px] text-muted-foreground uppercase">{lead.status}</p>
+                                    </div>
+                                    <div className={`text-xs font-black ${lead.aiScore >= 80 ? 'text-green-500' : lead.aiScore >= 60 ? 'text-orange-500' : 'text-red-500'}`}>
+                                        {lead.aiScore}%
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 

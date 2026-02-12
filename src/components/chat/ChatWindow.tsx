@@ -35,23 +35,25 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 message: t('chat_welcome')
             }
             syncChat(activeLead.id, initialMsg)
-            setStep('name')
+            setTimeout(() => setStep('name'), 0)
         }
-    }, [activeLead?.id, language])
+    }, [activeLead?.id, language, syncChat, t])
 
     // Resume conversation step based on filled fields
     useEffect(() => {
         if (activeLead && activeLead.chatHistory && activeLead.chatHistory.length > 0) {
-            if (activeLead.phone) setStep('complete')
-            else if (activeLead.email) setStep('phone')
-            else if (activeLead.entryDate) setStep('email')
-            else if (activeLead.hasGuarantor !== undefined) setStep('entry_date')
-            else if (activeLead.contractType) setStep('guarantor')
-            else if (activeLead.income > 0) setStep('contract')
-            else if (activeLead.name) setStep('income')
-            else setStep('name')
+            setTimeout(() => {
+                if (activeLead.phone) setStep('complete')
+                else if (activeLead.email) setStep('phone')
+                else if (activeLead.entryDate) setStep('email')
+                else if (activeLead.hasGuarantor !== undefined) setStep('entry_date')
+                else if (activeLead.contractType) setStep('guarantor')
+                else if (activeLead.income > 0) setStep('contract')
+                else if (activeLead.name) setStep('income')
+                else setStep('name')
+            }, 0)
         }
-    }, [activeLead?.id])
+    }, [activeLead])
 
     const handleSend = async () => {
         if (!input.trim() || !activeLead || isThinking) return
@@ -67,7 +69,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
         let aiResponse = ''
         let nextStep: ConversationStep = step
-        let leadUpdates: Partial<Lead> = {}
+        const leadUpdates: Partial<Lead> = {}
 
         const lowerInput = input.toLowerCase()
 

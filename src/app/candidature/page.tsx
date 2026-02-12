@@ -14,7 +14,7 @@ export default function CandidaturePage() {
     useEffect(() => {
         // Create a new lead automatically when the page loads
         if (!currentLeadId) {
-            const newLeadId = crypto.randomUUID()
+            const newLeadId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11)
             const newLead = {
                 id: newLeadId,
                 name: '',

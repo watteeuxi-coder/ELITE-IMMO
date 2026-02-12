@@ -8,18 +8,12 @@ import { useLanguage } from '../../i18n/LanguageContext'
 import {
     DndContext,
     DragEndEvent,
-    PointerSensor,
     TouchSensor,
     MouseSensor,
     useSensor,
     useSensors,
     closestCenter,
 } from '@dnd-kit/core'
-import {
-    arrayMove,
-    SortableContext,
-    verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
 
 export function KanbanBoard() {
     const { leads, updateLead } = useStore()

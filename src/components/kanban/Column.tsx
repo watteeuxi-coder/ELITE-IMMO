@@ -2,12 +2,13 @@
 
 import React from 'react'
 import { TaskCard } from './TaskCard'
-import { Lead } from '../../store/useStore'
 import { Plus, MoreHorizontal } from 'lucide-react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { useLanguage } from '../../i18n/LanguageContext'
-import { useStore } from '../../store/useStore'
+import { useStore, Lead } from '../../store/useStore'
+import { Modal } from '../common/Modal'
+import { useState } from 'react'
 
 interface ColumnProps {
     title: string
@@ -22,10 +23,16 @@ export function Column({ title, leads, status }: ColumnProps) {
         id: status,
     })
 
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+    const [newLeadName, setNewLeadName] = useState('')
+    const [isComingSoonOpen, setIsComingSoonOpen] = useState(false)
+
     const handleAddLead = () => {
+        if (!newLeadName.trim()) return
+
         const newLead: Lead = {
-            id: crypto.randomUUID(),
-            name: 'Nouveau Prospect',
+            id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
+            name: newLeadName,
             income: 0,
             contractType: 'CDI',
             hasGuarantor: false,
@@ -35,10 +42,12 @@ export function Column({ title, leads, status }: ColumnProps) {
             chatHistory: []
         }
         addLead(newLead)
+        setNewLeadName('')
+        setIsAddModalOpen(false)
     }
 
     const handleOpenMenu = () => {
-        alert(t('common_coming_soon') || 'Bientôt disponible...')
+        setIsComingSoonOpen(true)
     }
 
     return (
@@ -52,7 +61,7 @@ export function Column({ title, leads, status }: ColumnProps) {
                 </div>
                 <div className="flex items-center gap-1">
                     <button
-                        onClick={handleAddLead}
+                        onClick={() => setIsAddModalOpen(true)}
                         className="p-1.5 text-muted-foreground hover:text-foreground transition-all hover:bg-white/50 rounded-lg shadow-sm"
                     >
                         <Plus className="w-4 h-4" />
@@ -79,6 +88,58 @@ export function Column({ title, leads, status }: ColumnProps) {
                     </div>
                 )}
             </div>
+            <Modal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                title={t('kanban_add')}
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">{t('kanban_add_alert').replace('{title}', title)}</p>
+                    <input
+                        autoFocus
+                        type="text"
+                        value={newLeadName}
+                        onChange={(e) => setNewLeadName(e.target.value)}
+                        placeholder="Ex: Jean Dupont"
+                        className="w-full px-6 py-4 bg-white border-2 border-border/50 rounded-2xl focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all font-bold outline-none"
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddLead()}
+                    />
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setIsAddModalOpen(false)}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-secondary text-foreground hover:bg-secondary/70 transition-all"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={handleAddLead}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+                        >
+                            {t('kanban_add')}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={isComingSoonOpen}
+                onClose={() => setIsComingSoonOpen(false)}
+                title="Elite AI Assistant"
+            >
+                <div className="text-center space-y-4 py-6">
+                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Plus className="w-10 h-10 text-primary rotate-45" />
+                    </div>
+                    <p className="text-lg font-bold text-foreground">{t('common_coming_soon') || 'Bientôt disponible...'}</p>
+                    <p className="text-sm text-muted-foreground">Cette fonctionnalité est en cours de développement.</p>
+                    <button
+                        onClick={() => setIsComingSoonOpen(false)}
+                        className="w-full py-4 rounded-2xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+                    >
+                        Compris
+                    </button>
+                </div>
+            </Modal>
         </div>
     )
 }

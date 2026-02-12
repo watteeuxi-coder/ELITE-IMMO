@@ -6,13 +6,15 @@ import { ChatWindow } from '../../components/chat/ChatWindow'
 import { cn } from '../../lib/utils'
 import { Search, Filter, Plus, Trash2, User } from 'lucide-react'
 import { useLanguage } from '../../i18n/LanguageContext'
+import { Modal } from '../../components/common/Modal'
 
 export default function LeadsPage() {
     const { leads, addLead, deleteLead, fetchLeads, isLoading } = useStore()
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
     const [selectedLeadId, setSelectedLeadId] = useState<string | undefined>()
     const [searchTerm, setSearchTerm] = useState('')
     const [filterOnlyQualified, setFilterOnlyQualified] = useState(false)
+    const [leadToDelete, setLeadToDelete] = useState<Lead | null>(null)
 
     useEffect(() => {
         fetchLeads()
@@ -122,7 +124,7 @@ export default function LeadsPage() {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation()
-                                        if (confirm(t('leads_delete_confirm'))) deleteLead(lead.id)
+                                        setLeadToDelete(lead)
                                     }}
                                     className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-red-400 opacity-0 group-hover:opacity-100 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                 >
@@ -148,6 +150,38 @@ export default function LeadsPage() {
                     )}
                 </div>
             </div>
+            <Modal
+                isOpen={!!leadToDelete}
+                onClose={() => setLeadToDelete(null)}
+                title={t('leads_delete_confirm')}
+            >
+                <div className="space-y-6">
+                    <p className="text-muted-foreground">
+                        {language === 'fr'
+                            ? `Voulez-vous vraiment supprimer ${leadToDelete?.name} ?`
+                            : `Are you sure you want to delete ${leadToDelete?.name}?`}
+                    </p>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setLeadToDelete(null)}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-secondary text-foreground hover:bg-secondary/70 transition-all"
+                        >
+                            {language === 'fr' ? 'Annuler' : 'Cancel'}
+                        </button>
+                        <button
+                            onClick={() => {
+                                if (leadToDelete) {
+                                    deleteLead(leadToDelete.id)
+                                    setLeadToDelete(null)
+                                }
+                            }}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-red-500 text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all"
+                        >
+                            {language === 'fr' ? 'Supprimer' : 'Delete'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 }

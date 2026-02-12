@@ -3,13 +3,16 @@ import { BadgeCheck, Clock, Calendar, Trash2 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { Lead, useStore } from '../../store/useStore'
 import { useLanguage } from '../../i18n/LanguageContext'
+import { Modal } from '../common/Modal'
+import { useState } from 'react'
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
 export const TaskCard = memo(({ lead }: { lead: Lead }) => {
     const { deleteLead } = useStore()
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
     const {
         attributes,
         listeners,
@@ -28,9 +31,12 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
 
     const handleDelete = (e: React.MouseEvent) => {
         e.stopPropagation()
-        if (confirm(t('leads_delete_confirm'))) {
-            deleteLead(lead.id)
-        }
+        setIsDeleteModalOpen(true)
+    }
+
+    const confirmDelete = () => {
+        deleteLead(lead.id)
+        setIsDeleteModalOpen(false)
     }
 
     return (
@@ -88,6 +94,29 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
                     ))}
                 </div>
             </div>
+            <Modal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                title={t('leads_delete_confirm')}
+            >
+                <div className="space-y-6">
+                    <p className="text-muted-foreground">{language === 'fr' ? `Voulez-vous vraiment supprimer ${lead.name} ?` : `Are you sure you want to delete ${lead.name}?`}</p>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setIsDeleteModalOpen(false)}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-secondary text-foreground hover:bg-secondary/70 transition-all"
+                        >
+                            {language === 'fr' ? 'Annuler' : 'Cancel'}
+                        </button>
+                        <button
+                            onClick={confirmDelete}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-red-500 text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all"
+                        >
+                            {language === 'fr' ? 'Supprimer' : 'Delete'}
+                        </button>
+                    </div>
+                </div>
+            </Modal>
         </div>
     )
 })

@@ -106,9 +106,10 @@ export const useStore = create<EliteStore>((set, get) => ({
             if (notifError) console.error('Supabase Error (notifications):', notifError)
             else set({ notifications: notifData || [] })
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error fetching leads:', error)
-            if (error.message?.includes('network')) {
+            const err = error as { message?: string }
+            if (err.message?.includes('network')) {
                 alert('Erreur réseau Supabase. Vérifiez votre connexion.')
             }
         } finally {
@@ -152,7 +153,7 @@ export const useStore = create<EliteStore>((set, get) => ({
 
     updateLead: async (id, updates) => {
         try {
-            const supabaseUpdates: any = {}
+            const supabaseUpdates: Record<string, string | number | boolean | null> = {}
             if (updates.name !== undefined) supabaseUpdates.name = updates.name
             if (updates.income !== undefined) supabaseUpdates.income = updates.income
             if (updates.contractType !== undefined) supabaseUpdates.contract_type = updates.contractType
@@ -273,9 +274,10 @@ export const useStore = create<EliteStore>((set, get) => ({
 
             set({ leads: [], activeLead: null })
             alert('Base de données réinitialisée avec succès !')
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Reset error:', error)
-            alert(`Erreur lors de la réinitialisation: ${error.message}`)
+            const err = error as { message?: string }
+            alert(`Erreur lors de la réinitialisation: ${err.message}`)
         } finally {
             set({ isLoading: false })
         }
@@ -295,7 +297,7 @@ export const useStore = create<EliteStore>((set, get) => ({
     },
 
     subscribeToNotifications: () => {
-        const channel = supabase
+        supabase
             .channel('realtime_notifications')
             .on('postgres_changes', {
                 event: '*',

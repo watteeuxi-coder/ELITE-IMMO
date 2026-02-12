@@ -1,10 +1,10 @@
 "use client"
 
 import React from 'react'
-import { BadgeCheck, Clock, User } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import Link from 'next/link'
 import { useLanguage } from '../../i18n/LanguageContext'
-import { useStore, Lead } from '../../store/useStore'
+import { useStore } from '../../store/useStore'
 import { cn } from '../../lib/utils'
 
 export function RecentActivitiesTable() {
@@ -44,7 +44,7 @@ export function RecentActivitiesTable() {
                         Aucune activité récente.
                     </div>
                 ) : (
-                    activities.map((activity, i) => (
+                    activities.map((activity) => (
                         <div key={activity.id} className="flex items-center gap-4 p-4 bg-white/50 rounded-2xl border border-border/50 hover:bg-white transition-all group">
                             <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                                 {activity.avatar}

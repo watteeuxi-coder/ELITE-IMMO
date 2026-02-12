@@ -2,11 +2,14 @@
 
 import React, { useState, useMemo, useEffect } from 'react'
 import { DayPicker } from 'react-day-picker'
-import { format, parse } from 'date-fns'
+import { format, parse, isValid } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { Calendar as CalendarIcon, Clock, MapPin, User, MoreHorizontal, Phone, Mail, ExternalLink, AlertCircle } from 'lucide-react'
+import { Calendar as CalendarIcon, Clock, MapPin, User, MoreHorizontal, Phone, Mail, ExternalLink, AlertCircle, PlusCircle } from 'lucide-react'
 import 'react-day-picker/dist/style.css'
 import { useStore, Lead } from '../../store/useStore'
+import { useRouter } from 'next/navigation'
+import { cn } from '../../lib/utils'
+
 
 interface Visit {
     id: string
@@ -26,12 +29,17 @@ import { useLanguage } from '../../i18n/LanguageContext'
 export default function CalendarPage() {
     const { leads } = useStore()
     const { t, language } = useLanguage()
+    const router = useRouter()
+
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
     const [selectedVisit, setSelectedVisit] = useState<Visit | undefined>()
     const [calendarView, setCalendarView] = useState<'month' | 'week'>('month')
 
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
+    const today = useMemo(() => {
+        const d = new Date()
+        d.setHours(0, 0, 0, 0)
+        return d
+    }, [])
 
     // Reset selected visit when date changes
     useEffect(() => {
@@ -55,13 +63,18 @@ export default function CalendarPage() {
                     else if (lead.entryDate.includes('-')) {
                         parsedDate = new Date(lead.entryDate)
                     }
-                    // Try natural language like "27 février" or "le 1er mars"
+                    // Try natural language or fallback
                     else {
-                        // Default to today + 7 days for unparseable dates
                         parsedDate = new Date()
                         parsedDate.setDate(parsedDate.getDate() + 7)
                     }
                 } catch {
+                    parsedDate = new Date()
+                    parsedDate.setDate(parsedDate.getDate() + 7)
+                }
+
+                // Final safety check
+                if (!isValid(parsedDate)) {
                     parsedDate = new Date()
                     parsedDate.setDate(parsedDate.getDate() + 7)
                 }
@@ -88,19 +101,21 @@ export default function CalendarPage() {
             })
     }, [leads, t, today])
 
-    const visitDates = visits.map(v => v.date)
-    const confirmedVisitDates = visits.filter(v => v.status === 'confirmed').map(v => v.date)
-    const pendingVisitDates = visits.filter(v => v.status === 'pending').map(v => v.date)
-    const missedVisitDates = visits.filter(v => v.status === 'missed').map(v => v.date)
-    const missedVisits = visits.filter(v => v.status === 'missed')
+    const visitDates = useMemo(() => visits.map(v => v.date), [visits])
+    const confirmedVisitDates = useMemo(() => visits.filter(v => v.status === 'confirmed').map(v => v.date), [visits])
+    const pendingVisitDates = useMemo(() => visits.filter(v => v.status === 'pending').map(v => v.date), [visits])
+    const missedVisitDates = useMemo(() => visits.filter(v => v.status === 'missed').map(v => v.date), [visits])
+    const missedVisits = useMemo(() => visits.filter(v => v.status === 'missed'), [visits])
 
-    const selectedVisits = visits.filter(v =>
-        selectedDate && format(v.date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
-    )
+    const selectedVisits = useMemo(() => visits.filter(v =>
+        selectedDate && isValid(v.date) && isValid(selectedDate) && format(v.date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
+    ), [visits, selectedDate])
 
     // Get days of the week for the selected date
-    const getWeekDays = (date: Date) => {
-        const start = new Date(date)
+    const weekDays = useMemo(() => {
+        if (!selectedDate || !isValid(selectedDate)) return []
+
+        const start = new Date(selectedDate)
         const day = start.getDay()
         const diff = start.getDate() - day + (day === 0 ? -6 : 1) // Monday start
         const monday = new Date(start.setDate(diff))
@@ -110,29 +125,45 @@ export default function CalendarPage() {
             d.setDate(monday.getDate() + i)
             return d
         })
-    }
+    }, [selectedDate])
 
-    const weekDays = selectedDate ? getWeekDays(selectedDate) : []
-    const timeSlots = Array.from({ length: 13 }, (_, i) => i + 8) // 8h to 20h
+    const timeSlots = useMemo(() => Array.from({ length: 13 }, (_, i) => i + 8), []) // 8h to 20h
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight mb-2 text-foreground">{t('calendar_title')}</h1>
-                <p className="text-muted-foreground font-medium">{t('calendar_subtitle')}</p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-4xl font-black tracking-tight mb-2 text-foreground grad-text">{t('calendar_title')}</h1>
+                    <p className="text-muted-foreground font-medium text-lg">{t('calendar_subtitle')}</p>
+                </div>
+                {/* View Toggle */}
+                <div className="inline-flex items-center gap-1 p-1 bg-white/60 rounded-2xl shadow-sm border border-border/50 backdrop-blur-md">
+                    <button
+                        onClick={() => setCalendarView('month')}
+                        className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${calendarView === 'month' ? 'bg-[#7084FF] text-white shadow-lg shadow-[#7084FF]/20' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        {t('calendar_view_month')}
+                    </button>
+                    <button
+                        onClick={() => setCalendarView('week')}
+                        className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${calendarView === 'week' ? 'bg-[#7084FF] text-white shadow-lg shadow-[#7084FF]/20' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                        {t('calendar_view_week')}
+                    </button>
+                </div>
             </div>
 
             {/* Missed Appointments Alert */}
             {missedVisits.length > 0 && (
-                <div className="glass p-6 rounded-3xl border-2 border-red-200 bg-red-50/50">
+                <div className="glass p-6 rounded-[2.5rem] border-2 border-red-200 bg-red-50/50 shadow-xl shadow-red-500/5">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                            <AlertCircle className="w-6 h-6 text-red-600" />
+                        <div className="w-14 h-14 rounded-2xl bg-red-100 flex items-center justify-center shrink-0 shadow-inner">
+                            <AlertCircle className="w-8 h-8 text-red-600" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-lg font-bold text-red-900 mb-2">{t('calendar_missed_title')}</h3>
-                            <p className="text-sm text-red-700 mb-4">{missedVisits.length} rendez-vous manqué(s) à relancer</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <h3 className="text-xl font-black text-red-900 mb-1">{t('calendar_missed_title')}</h3>
+                            <p className="text-sm font-medium text-red-700/80 mb-4">{missedVisits.length} {language === 'fr' ? 'rendez-vous manqués à relancer d\'urgence' : 'missed appointments to reschedule urgently'}</p>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                                 {missedVisits.slice(0, 4).map((visit) => (
                                     <button
                                         key={visit.id}
@@ -140,19 +171,14 @@ export default function CalendarPage() {
                                             setSelectedDate(visit.date)
                                             setSelectedVisit(visit)
                                         }}
-                                        className="p-3 bg-white rounded-xl border border-red-200 hover:border-red-400 transition-all text-left group"
+                                        className="p-4 bg-white rounded-2xl border border-red-100 hover:border-red-400 hover:shadow-lg transition-all text-left flex items-center gap-3 active:scale-95"
                                     >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-                                                <User className="w-4 h-4 text-red-600" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-bold text-foreground truncate">{visit.leadName}</p>
-                                                <p className="text-xs text-muted-foreground">{format(visit.date, 'dd MMM', { locale: language === 'fr' ? fr : undefined })}</p>
-                                            </div>
-                                            <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-1 rounded-md">
-                                                {t('calendar_recontact')}
-                                            </span>
+                                        <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                                            <User className="w-5 h-5 text-red-500" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold text-foreground truncate">{visit.leadName}</p>
+                                            <p className="text-[10px] font-bold text-red-500 uppercase tracking-wider">{t('calendar_recontact')}</p>
                                         </div>
                                     </button>
                                 ))}
@@ -162,133 +188,88 @@ export default function CalendarPage() {
                 </div>
             )}
 
-            {/* View Toggle */}
-            <div className="flex justify-end">
-                <div className="inline-flex items-center gap-1 p-1 bg-white/60 rounded-xl shadow-sm border border-border/50">
-                    <button
-                        onClick={() => setCalendarView('month')}
-                        className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${calendarView === 'month' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                        {t('calendar_view_month')}
-                    </button>
-                    <button
-                        onClick={() => setCalendarView('week')}
-                        className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all ${calendarView === 'week' ? 'bg-primary text-white shadow-md' : 'text-muted-foreground hover:text-foreground'}`}
-                    >
-                        {t('calendar_view_week')}
-                    </button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
                 {/* Calendar or Weekly View */}
-                <div className="lg:col-span-2 glass p-8 rounded-3xl">
+                <div className="xl:col-span-8 glass p-10 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-[#7084FF]/5 rounded-full blur-3xl -mr-32 -mt-32 transition-all group-hover:bg-[#7084FF]/10" />
+                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl -ml-32 -mb-32 transition-all group-hover:bg-purple-500/10" />
+
                     {calendarView === 'month' ? (
-                        <>
+                        <div className="relative">
                             <style jsx global>{`
             .rdp {
-              --rdp-cell-size: 50px;
+              --rdp-cell-size: 75px;
               --rdp-accent-color: #7084FF;
               --rdp-background-color: rgba(112, 132, 255, 0.1);
               font-family: inherit;
+              margin: 0 auto;
             }
             .rdp-months {
               justify-content: center;
             }
             .rdp-caption {
-              margin-bottom: 1.5rem;
+              margin-bottom: 2.5rem;
             }
             .rdp-caption_label {
-              font-size: 1.125rem;
-              font-weight: 700;
+              font-size: 1.5rem;
+              font-weight: 900;
               color: #1a1a1a;
+              letter-spacing: -0.02em;
             }
             .rdp-head_cell {
-              font-weight: 600;
-              font-size: 0.875rem;
+              font-weight: 800;
+              font-size: 0.75rem;
               color: #636366;
               text-transform: uppercase;
+              letter-spacing: 0.1em;
+              padding-bottom: 1rem;
             }
             .rdp-cell {
-              padding: 0.25rem;
+              padding: 0.4rem;
             }
             .rdp-day {
-              border-radius: 12px;
-              font-weight: 500;
-              transition: all 0.2s;
+              border-radius: 20px;
+              font-weight: 700;
+              transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+              font-size: 1.125rem;
+              border: 2px solid transparent;
             }
             .rdp-day:hover:not(.rdp-day_selected) {
-              background-color: rgba(112, 132, 255, 0.1);
+              background-color: rgba(112, 132, 255, 0.08);
+              border-color: rgba(112, 132, 255, 0.2);
+              transform: translateY(-2px);
             }
             .rdp-day_selected {
-              background-color: #7084FF;
-              color: white;
-              font-weight: 700;
+              background-color: #7084FF !important;
+              color: white !important;
+              font-weight: 900;
+              box-shadow: 0 10px 20px -5px rgba(112, 132, 255, 0.4);
             }
             .rdp-day_today {
-              font-weight: 700;
               color: #7084FF;
+              background-color: rgba(112, 132, 255, 0.05);
+              border-color: rgba(112, 132, 255, 0.3);
             }
-            .visit-indicator {
-              position: relative;
-            }
-            .visit-indicator::after {
+            .visit-indicator::before {
               content: '';
               position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 6px;
-              height: 6px;
+              top: 6px;
+              right: 6px;
+              width: 8px;
+              height: 8px;
+              border-radius: 50%;
               background-color: #7084FF;
-              border-radius: 50%;
+              box-shadow: 0 0 10px #7084FF;
             }
-            .visit-confirmed {
-              position: relative;
+            .visit-confirmed::before { background-color: #16a34a; box-shadow: 0 0 10px #16a34a; }
+            .visit-pending::before { background-color: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+            .visit-missed::before { 
+              background-color: #dc2626; 
+              box-shadow: 0 0 10px #dc2626;
+              animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
             }
-            .visit-confirmed::after {
-              content: '';
-              position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 6px;
-              height: 6px;
-              background-color: #16a34a;
-              border-radius: 50%;
-            }
-            .visit-pending {
-              position: relative;
-            }
-            .visit-pending::after {
-              content: '';
-              position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 6px;
-              height: 6px;
-              background-color: #f59e0b;
-              border-radius: 50%;
-            }
-            .visit-missed {
-              position: relative;
-            }
-            .visit-missed::after {
-              content: '';
-              position: absolute;
-              bottom: 4px;
-              left: 50%;
-              transform: translateX(-50%);
-              width: 6px;
-              height: 6px;
-              background-color: #dc2626;
-              border-radius: 50%;
-              animation: pulse 2s infinite;
-            }
-            @keyframes pulse {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0.5; }
+            @keyframes ping {
+              75%, 100% { transform: scale(2); opacity: 0; }
             }
           `}</style>
 
@@ -304,32 +285,39 @@ export default function CalendarPage() {
                                     visitMissed: missedVisitDates
                                 }}
                                 modifiersClassNames={{
-                                    visit: 'visit-indicator',
+                                    visit: 'visit-indicator relative',
                                     visitConfirmed: 'visit-confirmed',
                                     visitPending: 'visit-pending',
                                     visitMissed: 'visit-missed'
                                 }}
                             />
-                        </>
+                        </div>
                     ) : (
                         /* Weekly View */
-                        <div className="space-y-4">
-                            <h3 className="text-lg font-bold text-foreground mb-4">
-                                {weekDays.length > 0 && `${format(weekDays[0], language === 'fr' ? 'd MMM' : 'MMM d', { locale: language === 'fr' ? fr : undefined })} - ${format(weekDays[6], language === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy', { locale: language === 'fr' ? fr : undefined })}`}
-                            </h3>
-                            <div className="overflow-x-auto">
-                                <div className="min-w-[700px]">
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-2xl font-black text-foreground">
+                                    {weekDays.length > 0 && `${format(weekDays[0], language === 'fr' ? 'd MMM' : 'MMM d', { locale: language === 'fr' ? fr : undefined })} - ${format(weekDays[6], language === 'fr' ? 'd MMM yyyy' : 'MMM d, yyyy', { locale: language === 'fr' ? fr : undefined })}`}
+                                </h3>
+                                <div className="flex gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                    <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500" /> {t('calendar_status_confirmed')}</span>
+                                    <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-orange-500" /> {t('calendar_status_pending')}</span>
+                                    <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-500" /> {t('calendar_status_missed')}</span>
+                                </div>
+                            </div>
+                            <div className="overflow-x-auto pb-4 custom-scrollbar">
+                                <div className="min-w-[900px]">
                                     {/* Header - Days of week */}
-                                    <div className="grid grid-cols-8 gap-0 mb-2">
-                                        <div className="text-xs font-medium text-muted-foreground p-2">{t('calendar_hour')}</div>
+                                    <div className="grid grid-cols-8 gap-4 mb-6">
+                                        <div className="text-xs font-black text-muted-foreground uppercase flex items-center justify-center border-b-2 border-transparent pb-4">{t('calendar_hour')}</div>
                                         {weekDays.map((day, idx) => (
-                                            <div key={idx} className="text-center p-2">
-                                                <div className="text-xs font-semibold text-muted-foreground uppercase">
-                                                    {format(day, language === 'fr' ? 'EEE' : 'EEE', { locale: language === 'fr' ? fr : undefined })}
+                                            <div key={idx} className="text-center pb-4 border-b-2 border-transparent">
+                                                <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">
+                                                    {format(day, language === 'fr' ? 'EEEE' : 'EEEE', { locale: language === 'fr' ? fr : undefined })}
                                                 </div>
-                                                <div className={`text-2xl font-bold mt-1 ${format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
-                                                        ? 'text-primary'
-                                                        : 'text-foreground'
+                                                <div className={`text-3xl font-black w-12 h-12 flex items-center justify-center mx-auto rounded-xl transition-all ${format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
+                                                    ? 'bg-[#7084FF] text-white shadow-lg shadow-[#7084FF]/30 scale-110'
+                                                    : 'text-foreground'
                                                     }`}>
                                                     {format(day, 'd')}
                                                 </div>
@@ -338,12 +326,12 @@ export default function CalendarPage() {
                                     </div>
 
                                     {/* Time Grid */}
-                                    <div className="space-y-0 border border-border/30 rounded-xl overflow-hidden">
+                                    <div className="space-y-3">
                                         {timeSlots.map((hour) => (
-                                            <div key={hour} className="grid grid-cols-8 gap-0 border-b border-border/20 last:border-b-0 min-h-[70px]">
+                                            <div key={hour} className="grid grid-cols-8 gap-4 min-h-[80px]">
                                                 {/* Time label */}
-                                                <div className="flex items-start justify-center pt-2 bg-muted/30 border-r border-border/30">
-                                                    <span className="text-sm font-bold text-muted-foreground">{hour}:00</span>
+                                                <div className="flex items-center justify-center">
+                                                    <span className="text-sm font-black text-muted-foreground/60">{hour}:00</span>
                                                 </div>
                                                 {/* Day columns */}
                                                 {weekDays.map((day, dayIdx) => {
@@ -355,10 +343,10 @@ export default function CalendarPage() {
                                                     return (
                                                         <div
                                                             key={dayIdx}
-                                                            className={`relative border-r border-border/20 last:border-r-0 p-2 hover:bg-primary/5 transition-colors cursor-pointer ${format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd')
-                                                                    ? 'bg-primary/5'
-                                                                    : 'bg-white/50'
-                                                                }`}
+                                                            className={cn(
+                                                                "relative rounded-3xl p-1.5 transition-all group/cell border-2 border-transparent",
+                                                                format(day, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd') ? "bg-[#7084FF]/5 border-[#7084FF]/10" : "bg-secondary/20 hover:bg-white hover:shadow-xl hover:border-[#7084FF]/20"
+                                                            )}
                                                         >
                                                             {hourVisit ? (
                                                                 <button
@@ -366,18 +354,35 @@ export default function CalendarPage() {
                                                                         setSelectedDate(day)
                                                                         setSelectedVisit(hourVisit)
                                                                     }}
-                                                                    className={`w-full h-full p-2 rounded-lg text-left text-xs font-semibold transition-all hover:scale-[1.02] shadow-sm ${hourVisit.status === 'confirmed'
-                                                                            ? 'bg-green-100 text-green-900 border-2 border-green-400'
+                                                                    className={cn(
+                                                                        "w-full h-full p-3 rounded-2xl text-left transition-all hover:scale-[1.05] shadow-lg flex flex-col justify-between overflow-hidden relative",
+                                                                        hourVisit.status === 'confirmed'
+                                                                            ? "bg-white text-green-900 border-l-4 border-green-500"
                                                                             : hourVisit.status === 'missed'
-                                                                                ? 'bg-red-100 text-red-900 border-2 border-red-400'
-                                                                                : 'bg-orange-100 text-orange-900 border-2 border-orange-400'
-                                                                        }`}
+                                                                                ? "bg-white text-red-900 border-l-4 border-red-500"
+                                                                                : "bg-white text-orange-900 border-l-4 border-orange-500"
+                                                                    )}
                                                                 >
-                                                                    <div className="font-bold truncate">{hourVisit.leadName}</div>
-                                                                    <div className="text-[10px] opacity-75 mt-1">{hourVisit.time}</div>
-                                                                    <div className="text-[10px] font-bold mt-1">{hourVisit.aiScore}%</div>
+                                                                    <div>
+                                                                        <div className="font-extrabold text-xs truncate leading-tight">{hourVisit.leadName}</div>
+                                                                        <div className="text-[9px] font-bold opacity-60 mt-0.5">{hourVisit.time}</div>
+                                                                    </div>
+                                                                    <div className="flex items-center justify-between mt-2">
+                                                                        <div className={cn(
+                                                                            "text-[9px] font-black px-1.5 py-0.5 rounded-lg",
+                                                                            hourVisit.status === 'confirmed' ? "bg-green-100 text-green-600" :
+                                                                                hourVisit.status === 'missed' ? "bg-red-100 text-red-600" : "bg-orange-100 text-orange-600"
+                                                                        )}>
+                                                                            {hourVisit.aiScore}%
+                                                                        </div>
+                                                                        <User className="w-3 h-3 opacity-20" />
+                                                                    </div>
                                                                 </button>
-                                                            ) : null}
+                                                            ) : (
+                                                                <div className="w-full h-full flex items-center justify-center opacity-0 group-hover/cell:opacity-100">
+                                                                    <PlusCircle className="w-5 h-5 text-[#7084FF]/30" />
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )
                                                 })}
@@ -390,169 +395,191 @@ export default function CalendarPage() {
                     )}
                 </div>
 
-                {/* Visit Details Panel */}
-                <div className="glass p-6 rounded-3xl">
-                    <div className="flex items-center gap-2 mb-6">
-                        <CalendarIcon className="w-5 h-5 text-primary" />
-                        <h3 className="text-lg font-bold text-foreground">
-                            {selectedDate ? format(selectedDate, language === 'fr' ? 'dd MMMM yyyy' : 'MMMM dd, yyyy', { locale: language === 'fr' ? fr : undefined }) : t('calendar_select_date')}
-                        </h3>
-                    </div>
-
-                    {selectedVisit ? (
-                        <div className="space-y-4">
-                            {/* Lead Avatar & Name */}
-                            <div className="flex items-center gap-4 pb-4 border-b border-border">
-                                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                    <User className="w-8 h-8 text-primary" />
+                {/* Visit Details Panel ("Fiche Express") */}
+                <div className="xl:col-span-4 flex flex-col gap-6">
+                    <div className="glass p-8 rounded-[3rem] shadow-2xl flex-1 flex flex-col">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-[#7084FF]/10 flex items-center justify-center">
+                                    <CalendarIcon className="w-6 h-6 text-[#7084FF]" />
                                 </div>
-                                <div className="flex-1">
-                                    <h4 className="text-xl font-bold text-foreground">{selectedVisit.leadName}</h4>
-                                    <div className="flex items-center gap-2 mt-1">
-                                        <Clock className="w-4 h-4 text-muted-foreground" />
-                                        <span className="text-sm text-muted-foreground">{selectedVisit.time}</span>
-                                    </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-foreground leading-tight">
+                                        {selectedDate ? format(selectedDate, language === 'fr' ? 'EEEE d MMMM' : 'EEEE, MMMM d', { locale: language === 'fr' ? fr : undefined }) : t('calendar_select_date')}
+                                    </h3>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{selectedDate ? format(selectedDate, 'yyyy') : ''}</p>
                                 </div>
                             </div>
-
-                            {/* AI Score Badge */}
-                            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/5 to-purple-500/5 rounded-2xl">
-                                <span className="font-semibold text-foreground">{t('calendar_ai_score')}</span>
-                                <span className={`text-2xl font-black ${selectedVisit.aiScore >= 80 ? 'text-green-600' :
-                                    selectedVisit.aiScore >= 60 ? 'text-orange-600' :
-                                        'text-red-600'
-                                    }`}>
-                                    {selectedVisit.aiScore}%
-                                </span>
-                            </div>
-
-                            {/* Status Badge */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-muted-foreground">Statut:</span>
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${selectedVisit.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                    selectedVisit.status === 'missed' ? 'bg-red-100 text-red-700' :
-                                        'bg-orange-100 text-orange-700'
-                                    }`}>
-                                    {t(`calendar_status_${selectedVisit.status}`)}
-                                </span>
-                            </div>
-
-                            {/* Contact Info */}
-                            <div className="space-y-3 pt-4 border-t border-border">
-                                {selectedVisit.phone && (
-                                    <a
-                                        href={`tel:${selectedVisit.phone}`}
-                                        className="flex items-center gap-3 p-3 bg-white/80 rounded-xl hover:bg-white transition-all group"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            <Phone className="w-5 h-5 text-green-600" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-xs text-muted-foreground">{t('calendar_call')}</p>
-                                            <p className="font-semibold text-foreground">{selectedVisit.phone}</p>
-                                        </div>
-                                        <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                                    </a>
-                                )}
-                                {selectedVisit.email && (
-                                    <a
-                                        href={`mailto:${selectedVisit.email}`}
-                                        className="flex items-center gap-3 p-3 bg-white/80 rounded-xl hover:bg-white transition-all group"
-                                    >
-                                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            <Mail className="w-5 h-5 text-blue-600" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-xs text-muted-foreground">{t('calendar_email')}</p>
-                                            <p className="font-semibold text-foreground text-sm truncate">{selectedVisit.email}</p>
-                                        </div>
-                                        <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                                    </a>
-                                )}
-                            </div>
-
-                            {/* View Profile Button */}
-                            <a
-                                href={`/leads`}
-                                className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-white rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                            >
-                                {t('calendar_view_profile')}
-                                <ExternalLink className="w-4 h-4" />
-                            </a>
+                            {selectedVisit && (
+                                <button className="p-3 hover:bg-secondary rounded-2xl transition-all">
+                                    <MoreHorizontal className="w-5 h-5 text-muted-foreground" />
+                                </button>
+                            )}
                         </div>
-                    ) : selectedVisits.length > 0 ? (
-                        <div className="space-y-3">
-                            <p className="text-sm text-muted-foreground mb-3">{selectedVisits.length} visite(s) ce jour</p>
-                            {selectedVisits.map((visit) => (
-                                <button
-                                    key={visit.id}
-                                    onClick={() => setSelectedVisit(visit)}
-                                    className="w-full p-4 bg-white/80 rounded-2xl border border-border/50 hover:bg-white hover:border-primary/30 transition-all text-left"
-                                >
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                            <User className="w-5 h-5 text-primary" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold text-foreground mb-1">{visit.leadName}</p>
-                                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-                                                <Clock className="w-3 h-3" />
-                                                <span>{visit.time}</span>
+
+                        {selectedVisit ? (
+                            <div className="space-y-8 animate-in slide-in-from-right-10 duration-500 flex-1 flex flex-col">
+                                {/* Lead Main Card */}
+                                <div className="relative group">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-[#7084FF] to-[#9D4EDD] rounded-[2rem] blur-xl opacity-20 group-hover:opacity-30 transition-opacity" />
+                                    <div className="relative glass p-6 rounded-[2rem] border border-white/40 flex flex-col items-center text-center">
+                                        <div className="w-24 h-24 rounded-3xl bg-white shadow-xl flex items-center justify-center mb-4 relative">
+                                            <User className="w-12 h-12 text-[#7084FF]" />
+                                            <div className={cn(
+                                                "absolute -bottom-2 -right-2 w-10 h-10 rounded-2xl border-4 border-white flex items-center justify-center text-[10px] font-black text-white shadow-lg",
+                                                selectedVisit.aiScore >= 80 ? 'bg-green-500 shadow-green-200' :
+                                                    selectedVisit.aiScore >= 60 ? 'bg-orange-500 shadow-orange-200' :
+                                                        'bg-red-500 shadow-red-200'
+                                            )}>
+                                                {selectedVisit.aiScore}%
                                             </div>
                                         </div>
-                                        <span className={`text-xs font-bold px-2 py-1 rounded-md ${visit.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                            visit.status === 'missed' ? 'bg-red-100 text-red-700' :
-                                                'bg-orange-100 text-orange-700'
-                                            }`}>
-                                            {visit.aiScore}%
-                                        </span>
+                                        <h4 className="text-2xl font-black text-foreground mb-1">{selectedVisit.leadName}</h4>
+                                        <div className="flex items-center gap-2 px-4 py-1.5 bg-secondary/50 rounded-full text-xs font-bold text-muted-foreground">
+                                            <Clock className="w-3.5 h-3.5" />
+                                            <span>{selectedVisit.time}</span>
+                                        </div>
                                     </div>
-                                </button>
-                            ))}
+                                </div>
+
+                                {/* Information & Actions */}
+                                <div className="space-y-4 flex-1">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-4 bg-white/50 rounded-2xl border border-white/40">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">{language === 'fr' ? 'Statut IA' : 'AI Status'}</p>
+                                            <span className={`text-xs font-black px-2.5 py-1 rounded-lg inline-block ${selectedVisit.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                                selectedVisit.status === 'missed' ? 'bg-red-100 text-red-700' :
+                                                    'bg-orange-100 text-orange-700'
+                                                }`}>
+                                                {t(`calendar_status_${selectedVisit.status}`)}
+                                            </span>
+                                        </div>
+                                        <div className="p-4 bg-white/50 rounded-2xl border border-white/40">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">{language === 'fr' ? 'Priorité' : 'Priority'}</p>
+                                            <span className={cn(
+                                                "text-xs font-black px-2.5 py-1 rounded-lg inline-block",
+                                                selectedVisit.aiScore >= 80 ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                            )}>
+                                                {selectedVisit.aiScore >= 80 ? (language === 'fr' ? '⭐ Élite' : '⭐ Elite') : (language === 'fr' ? 'Normal' : 'Normal')}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Quick Contact Buttons */}
+                                    <div className="flex gap-3">
+                                        {selectedVisit.phone && (
+                                            <a href={`tel:${selectedVisit.phone}`} className="flex-1 flex flex-col items-center justify-center p-4 bg-white rounded-3xl border border-border/50 hover:bg-green-50 hover:border-green-200 transition-all group scale-down-active">
+                                                <Phone className="w-5 h-5 text-green-500 mb-1 group-hover:scale-110 transition-transform" />
+                                                <span className="text-[10px] font-black uppercase text-muted-foreground">{t('calendar_call')}</span>
+                                            </a>
+                                        )}
+                                        {selectedVisit.email && (
+                                            <a href={`mailto:${selectedVisit.email}`} className="flex-1 flex flex-col items-center justify-center p-4 bg-white rounded-3xl border border-border/50 hover:bg-blue-50 hover:border-blue-200 transition-all group scale-down-active">
+                                                <Mail className="w-5 h-5 text-blue-500 mb-1 group-hover:scale-110 transition-transform" />
+                                                <span className="text-[10px] font-black uppercase text-muted-foreground">Email</span>
+                                            </a>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={() => router.push(`/leads?id=${selectedVisit.leadId}`)}
+                                        className="w-full py-5 bg-[#7084FF] text-white rounded-[1.5rem] font-black text-sm shadow-xl shadow-[#7084FF]/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-4"
+                                    >
+                                        {t('calendar_view_profile')}
+                                        <ExternalLink className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </div>
+                        ) : selectedVisits.length > 0 ? (
+                            <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                                <p className="text-sm font-bold text-muted-foreground mb-4 uppercase tracking-widest">{selectedVisits.length} {language === 'fr' ? 'Action(s) prevue(s)' : 'Planned action(s)'}</p>
+                                {selectedVisits.map((visit) => (
+                                    <button
+                                        key={visit.id}
+                                        onClick={() => setSelectedVisit(visit)}
+                                        className="w-full p-5 bg-white rounded-[2rem] border border-border/30 hover:shadow-2xl hover:border-[#7084FF]/30 hover:-translate-y-1 transition-all text-left group flex items-center gap-4 active:scale-95"
+                                    >
+                                        <div className="w-14 h-14 rounded-2xl bg-secondary/50 flex items-center justify-center shrink-0 group-hover:bg-[#7084FF]/10 transition-colors">
+                                            <User className="w-7 h-7 text-muted-foreground group-hover:text-[#7084FF] transition-colors" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-base font-black text-foreground truncate">{visit.leadName}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <div className={`w-2 h-2 rounded-full ${visit.status === 'confirmed' ? 'bg-green-500' : visit.status === 'missed' ? 'bg-red-500' : 'bg-orange-500'}`} />
+                                                <span className="text-[10px] font-bold text-muted-foreground uppercase">{visit.time} • AI {visit.aiScore}%</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex-1 flex flex-col items-center justify-center text-center p-8 opacity-40">
+                                <div className="w-24 h-24 bg-secondary/30 rounded-full flex items-center justify-center mb-6">
+                                    <CalendarIcon className="w-12 h-12 text-muted-foreground" />
+                                </div>
+                                <p className="text-lg font-black text-foreground">{t('calendar_no_visit_day')}</p>
+                                <p className="text-sm font-medium text-muted-foreground mt-2">{language === 'fr' ? 'Planifiez vos visites pour voir les détails ici' : 'Schedule visits to see details here'}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Fill the "holes" with stats/info as requested */}
+                    <div className="glass p-8 rounded-[3rem] shadow-xl border border-white/40">
+                        <h4 className="text-sm font-black text-foreground uppercase tracking-wider mb-6">{language === 'fr' ? 'Résumé de la Semaine' : 'Weekly Summary'}</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 rounded-3xl bg-green-500/10 border border-green-500/20 text-center">
+                                <p className="text-2xl font-black text-green-600">{visits.filter(v => v.status === 'confirmed').length}</p>
+                                <p className="text-[10px] font-bold text-green-700/60 uppercase">{language === 'fr' ? 'Confirmés' : 'Confirmed'}</p>
+                            </div>
+                            <div className="p-4 rounded-3xl bg-orange-500/10 border border-orange-500/20 text-center">
+                                <p className="text-2xl font-black text-orange-600">{visits.filter(v => v.status === 'pending').length}</p>
+                                <p className="text-[10px] font-bold text-orange-700/60 uppercase">En attente</p>
+                            </div>
                         </div>
-                    ) : (
-                        <div className="text-center py-12">
-                            <CalendarIcon className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                            <p className="text-sm text-muted-foreground">{t('calendar_no_visit_day')}</p>
-                        </div>
-                    )}
+                    </div>
                 </div>
             </div>
 
-            {/* Upcoming Visits */}
-            <div className="glass p-8 rounded-3xl">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-foreground">{t('calendar_upcoming_visits')} ({visits.length})</h3>
+            {/* Upcoming Visits List (Horizontal Scroll or Large Grid) */}
+            <div className="glass p-10 rounded-[3rem] bg-gradient-to-br from-white/80 to-[#7084FF]/5 shadow-2xl">
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                            <User className="w-6 h-6 text-primary" />
+                        </div>
+                        <h3 className="text-2xl font-black text-foreground">{t('calendar_upcoming_visits')} ({visits.length})</h3>
+                    </div>
                     <button
-                        onClick={() => alert("Créez un nouveau lead via la page Leads pour planifier une visite")}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                        onClick={() => router.push('/leads')}
+                        className="flex items-center gap-2 px-6 py-3 bg-white border border-border rounded-xl font-black text-sm shadow-sm hover:shadow-md hover:bg-[#7084FF]/5 transition-all text-[#7084FF]"
                     >
-                        <span className="text-lg">+</span>
-                        <span>{t('calendar_new_visit')}</span>
+                        {t('calendar_new_visit')}
                     </button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {visits.length > 0 ? visits.map((visit) => (
-                        <div key={visit.id} className="p-4 bg-white/50 rounded-2xl border border-white/40 hover:bg-white transition-all group flex flex-col relative">
-                            <button
-                                onClick={() => alert(t('calendar_actions_title').replace('{name}', visit.leadName))}
-                                className="absolute top-4 right-4 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-secondary rounded-lg"
-                            >
-                                <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                            </button>
-                            <div className="flex items-center justify-between mb-3">
-                                <span className="text-xs font-bold px-2.5 py-1 bg-primary/10 text-primary rounded-lg">
+                        <div key={visit.id} className="p-6 bg-white rounded-[2.5rem] border border-border/40 hover:shadow-2xl hover:-translate-y-2 transition-all group flex flex-col relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full -mr-12 -mt-12 transition-all group-hover:scale-150" />
+                            <div className="flex items-center justify-between mb-4 relative">
+                                <span className="text-xs font-black px-4 py-1.5 bg-[#7084FF] text-white rounded-xl shadow-lg shadow-[#7084FF]/20">
                                     {format(visit.date, 'dd MMM', { locale: language === 'fr' ? fr : undefined })}
                                 </span>
-                                <span className="text-xs font-bold text-muted-foreground pr-6">{visit.time}</span>
+                                <span className="text-xs font-black text-muted-foreground mr-2">{visit.time}</span>
                             </div>
-                            <p className="text-sm font-bold text-foreground mb-1">{visit.leadName}</p>
-                            <p className="text-xs text-muted-foreground truncate">{visit.property}</p>
+                            <p className="text-lg font-black text-foreground mb-1 pr-6 group-hover:text-[#7084FF] transition-colors">{visit.leadName}</p>
+                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 truncate">{visit.property}</p>
+                            <div className="mt-auto flex items-center justify-between">
+                                <div className="flex -space-x-2">
+                                    <div className="w-8 h-8 rounded-full border-2 border-white bg-primary/10 flex items-center justify-center text-[10px] font-black">{visit.aiScore}%</div>
+                                </div>
+                                <button onClick={() => setSelectedVisit(visit)} className="text-[10px] font-black text-[#7084FF] uppercase tracking-wider hover:underline">{language === 'fr' ? 'Détails' : 'Details'}</button>
+                            </div>
                         </div>
                     )) : (
-                        <div className="col-span-full text-center py-8">
-                            <CalendarIcon className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-                            <p className="text-sm text-muted-foreground">{t('calendar_empty_state')}</p>
+                        <div className="col-span-full text-center py-12">
+                            <CalendarIcon className="w-20 h-20 text-muted-foreground/20 mx-auto mb-4" />
+                            <p className="text-lg font-black text-muted-foreground">{t('calendar_empty_state')}</p>
+                            <p className="text-sm text-muted-foreground mt-1">{language === 'fr' ? 'Vos futurs rendez-vous s\'afficheront ici' : 'Your future appointments will appear here'}</p>
                         </div>
                     )}
                 </div>

@@ -13,16 +13,20 @@ import {
     LogOut,
     Share2,
     Check,
-    RefreshCw
+    RefreshCw,
+    ShieldAlert
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { useLanguage } from '../../i18n/LanguageContext'
 import { useStore } from '../../store/useStore'
+import { Modal } from '../common/Modal'
 
 export function Sidebar() {
-    const { t } = useLanguage()
+    const { t, language } = useLanguage()
     const pathname = usePathname()
     const [showToast, setShowToast] = useState(false)
+    const [isResetModalOpen, setIsResetModalOpen] = useState(false)
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
 
     const sidebarItems = [
         { name: t('side_dashboard'), icon: LayoutDashboard, href: '/' },
@@ -43,9 +47,12 @@ export function Sidebar() {
     }
 
     const handleReset = () => {
-        if (window.confirm(t('settings_reset_confirm'))) {
-            useStore.getState().resetDatabase()
-        }
+        setIsResetModalOpen(true)
+    }
+
+    const confirmReset = () => {
+        useStore.getState().resetDatabase()
+        setIsResetModalOpen(false)
     }
 
     return (
@@ -124,7 +131,7 @@ export function Sidebar() {
                         <span className="text-xs text-muted-foreground">{t('side_user_role')}</span>
                     </div>
                     <button
-                        onClick={() => alert('Déconnexion simulée (Mode Démo)')}
+                        onClick={() => setIsLogoutModalOpen(true)}
                         className="ml-auto p-2 text-muted-foreground hover:text-destructive transition-colors"
                     >
                         <LogOut className="w-4 h-4" />
@@ -146,6 +153,56 @@ export function Sidebar() {
                     </div>
                 </div>
             )}
+
+            {/* Modal Components */}
+            <Modal
+                isOpen={isResetModalOpen}
+                onClose={() => setIsResetModalOpen(false)}
+                title={t('settings_reset_confirm') || 'Réinitialisation'}
+            >
+                <div className="space-y-6">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <ShieldAlert className="w-8 h-8 text-red-500" />
+                    </div>
+                    <p className="text-center text-muted-foreground">Cette action supprimera tous les prospects et réinitialisera l'application. Cette opération est irréversible.</p>
+                    <div className="flex gap-4">
+                        <button
+                            onClick={() => setIsResetModalOpen(false)}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-secondary text-foreground hover:bg-secondary/70 transition-all"
+                        >
+                            Annuler
+                        </button>
+                        <button
+                            onClick={confirmReset}
+                            className="flex-1 py-4 rounded-2xl font-bold bg-red-500 text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all"
+                        >
+                            Réinitialiser
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            <Modal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                title="Déconnexion"
+            >
+                <div className="space-y-6 text-center py-4">
+                    <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <LogOut className="w-8 h-8 text-primary" />
+                    </div>
+                    <div>
+                        <p className="font-bold text-lg text-foreground mb-1">Mode Démo Elite</p>
+                        <p className="text-sm text-muted-foreground">La déconnexion est simulée dans cet environnement de démonstration.</p>
+                    </div>
+                    <button
+                        onClick={() => setIsLogoutModalOpen(false)}
+                        className="w-full py-4 rounded-2xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all"
+                    >
+                        Continuer l'exploration
+                    </button>
+                </div>
+            </Modal>
         </div>
     )
 }
