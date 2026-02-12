@@ -92,24 +92,29 @@ export default function LeadsPage() {
                                 <button
                                     onClick={() => setSelectedLeadId(lead.id)}
                                     className={cn(
-                                        "w-full p-5 flex items-center gap-4 transition-all",
+                                        "w-full p-4 flex items-center gap-3 transition-all",
                                         activeLead?.id === lead.id
                                             ? "bg-primary/10 ring-1 ring-inset ring-primary/20"
                                             : "odd:bg-white even:bg-slate-50/50 hover:bg-primary/5"
                                     )}
                                 >
-                                    <div className={cn(
-                                        "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 transition-colors",
-                                        activeLead?.id === lead.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
-                                    )}>
-                                        {lead.name ? lead.name[0] : '?'}
+                                    <div className="relative shrink-0">
+                                        <div className={cn(
+                                            "w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition-colors shadow-inner",
+                                            activeLead?.id === lead.id ? "bg-primary text-white" : "bg-primary/10 text-primary"
+                                        )}>
+                                            {lead.name ? lead.name[0] : '?'}
+                                        </div>
+                                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-white rounded-full flex items-center justify-center shadow-md border border-border">
+                                            <User className="w-3 h-3 text-primary" />
+                                        </div>
                                     </div>
-                                    <div className="flex-1 text-left">
+                                    <div className="flex-1 text-left min-w-0">
                                         <div className="flex items-center justify-between mb-0.5">
                                             <p className="text-sm font-bold text-foreground truncate">{lead.name}</p>
-                                            <span className="text-[10px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-md">{lead.aiScore}%</span>
+                                            <span className="text-[10px] font-black text-primary bg-primary/10 px-1.5 py-0.5 rounded-md shrink-0 ml-2">{lead.aiScore}%</span>
                                         </div>
-                                        <p className="text-[11px] text-muted-foreground truncate leading-relaxed">
+                                        <p className="text-[11px] text-muted-foreground leading-relaxed">
                                             {lead.chatHistory?.length ? lead.chatHistory[lead.chatHistory.length - 1].message : t('leads_no_message')}
                                         </p>
                                     </div>

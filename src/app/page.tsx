@@ -23,6 +23,9 @@ export default function Home() {
   const signedLeads = leads.filter(l => l.status === 'signed').length
   const visitLeads = leads.filter(l => l.entryDate && l.entryDate.trim() !== '').length
 
+  const qualifiedPercentage = totalProspects > 0 ? Math.round((qualifiedLeads / totalProspects) * 100) : 0
+  const visitPercentage = totalProspects > 0 ? Math.round((visitLeads / totalProspects) * 100) : 0
+
   return (
     <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-700">
       <div>
@@ -42,7 +45,7 @@ export default function Home() {
             value={totalProspects.toString()}
             icon={Users}
             color="blue"
-            trend=""
+            trend={totalProspects > 0 ? "Initial" : ""}
             trendUp={true}
           />
         </Link>
@@ -52,7 +55,7 @@ export default function Home() {
             value={qualifiedLeads.toString()}
             icon={TrendingUp}
             color="purple"
-            trend=""
+            trend={`${qualifiedPercentage}%`}
             trendUp={true}
           />
         </Link>
@@ -62,8 +65,8 @@ export default function Home() {
             value={visitLeads.toString()}
             icon={CalendarIcon}
             color="green"
-            trend=""
-            trendUp={false}
+            trend={`${visitPercentage}%`}
+            trendUp={true}
           />
         </Link>
         <Link href="/kanban" className="block hover:scale-[1.02] transition-transform">
