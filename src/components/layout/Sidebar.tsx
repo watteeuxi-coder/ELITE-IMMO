@@ -25,7 +25,7 @@ import { Modal } from '../common/Modal'
 export function Sidebar() {
     const { t, language } = useLanguage()
     const pathname = usePathname()
-    const { isSidebarOpen, setSidebarOpen, resetDatabase } = useStore()
+    const { isSidebarOpen, setSidebarOpen, resetDatabase, userProfile } = useStore()
     const [showToast, setShowToast] = useState(false)
     const [isResetModalOpen, setIsResetModalOpen] = useState(false)
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
@@ -122,6 +122,15 @@ export function Sidebar() {
                         <Share2 className="w-5 h-5 text-primary" />
                         <span className="font-bold text-sm text-primary">{t('side_share')}</span>
                     </button>
+
+                    {/* Reset Database Button */}
+                    <button
+                        onClick={handleReset}
+                        className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-red-50 text-red-500 hover:bg-red-100 transition-all duration-300 border border-red-100 mt-2"
+                    >
+                        <RefreshCw className="w-5 h-5" />
+                        <span className="font-bold text-sm">{t('side_reset') || 'Réinitialiser'}</span>
+                    </button>
                 </nav>
 
                 <div className="pt-6 border-t border-border mt-auto space-y-2">
@@ -143,8 +152,8 @@ export function Sidebar() {
                             <CircleUser className="w-6 h-6 text-muted-foreground" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-foreground">{t('nav_user_name')}</span>
-                            <span className="text-xs text-muted-foreground">{t('side_user_role')}</span>
+                            <span className="text-sm font-semibold text-foreground">{userProfile.name}</span>
+                            <span className="text-xs text-muted-foreground">{userProfile.role}</span>
                         </div>
                         <button
                             onClick={() => setIsLogoutModalOpen(true)}
@@ -171,6 +180,33 @@ export function Sidebar() {
                 )}
 
                 {/* Modal Components */}
+                <Modal
+                    isOpen={isResetModalOpen}
+                    onClose={() => setIsResetModalOpen(false)}
+                    title={t('settings_reset_confirm') || 'Réinitialisation'}
+                >
+                    <div className="space-y-6 text-center">
+                        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                            <ShieldAlert className="w-8 h-8 text-red-500" />
+                        </div>
+                        <p className="text-muted-foreground">Cette action supprimera tous les prospects et réinitialisera l'application. Cette opération est irréversible.</p>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setIsResetModalOpen(false)}
+                                className="flex-1 py-4 rounded-2xl font-bold bg-secondary text-foreground hover:bg-secondary/70 transition-all"
+                            >
+                                Annuler
+                            </button>
+                            <button
+                                onClick={confirmReset}
+                                className="flex-1 py-4 rounded-2xl font-bold bg-red-500 text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all"
+                            >
+                                Réinitialiser
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
+
                 <Modal
                     isOpen={isLogoutModalOpen}
                     onClose={() => setIsLogoutModalOpen(false)}

@@ -15,7 +15,7 @@ export function Navbar() {
     const { t, language } = useLanguage()
     const [showNotifications, setShowNotifications] = useState(false)
     const router = useRouter()
-    const { addLead, notifications, markAllNotificationsAsRead, fetchNotifications, leads, isSidebarOpen, toggleSidebar } = useStore()
+    const { addLead, notifications, markAllNotificationsAsRead, fetchNotifications, leads, isSidebarOpen, toggleSidebar, userProfile } = useStore()
     const [searchTerm, setSearchTerm] = useState('')
     const [showSuggestions, setShowSuggestions] = useState(false)
     const unreadCount = notifications.filter(n => !n.is_read).length
@@ -195,11 +195,13 @@ export function Navbar() {
                     {/* User Avatar */}
                     <div className="flex items-center gap-3 md:pl-3 md:border-l border-border">
                         <div className="hidden md:block text-right">
-                            <p className="text-sm font-bold text-foreground">{t('nav_user_name')}</p>
-                            <p className="text-xs text-muted-foreground">{t('nav_user_role')}</p>
+                            <p className="text-sm font-bold text-foreground">{userProfile.name}</p>
+                            <p className="text-xs text-muted-foreground">{userProfile.role}</p>
                         </div>
                         <div className="w-10 h-10 bg-[#7084FF] rounded-xl flex items-center justify-center shadow-lg shadow-[#7084FF]/20">
-                            <span className="text-white font-black text-sm">AE</span>
+                            <span className="text-white font-black text-sm">
+                                {userProfile.name.charAt(0)}{userProfile.name.split(' ')[1]?.charAt(0) || ''}
+                            </span>
                         </div>
                     </div>
                 </div>

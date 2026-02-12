@@ -29,6 +29,13 @@ export interface EliteNotification {
     is_read: boolean;
 }
 
+export interface UserProfile {
+    name: string;
+    email: string;
+    role: string;
+    avatar?: string;
+}
+
 interface EliteStore {
     leads: Lead[];
     activeLead: string | null;
@@ -52,6 +59,10 @@ interface EliteStore {
     addNotification: (notification: Omit<EliteNotification, 'id' | 'created_at' | 'is_read'>) => Promise<void>;
     markAllNotificationsAsRead: () => Promise<void>;
     subscribeToNotifications: () => void;
+
+    // User Profile
+    userProfile: UserProfile;
+    updateProfile: (profile: Partial<UserProfile>) => void;
 }
 
 export const useStore = create<EliteStore>((set, get) => ({
@@ -60,6 +71,14 @@ export const useStore = create<EliteStore>((set, get) => ({
     activeLead: null,
     isLoading: false,
     isSidebarOpen: false,
+    userProfile: {
+        name: 'Agent Elite',
+        email: 'agent@elite-immo.fr',
+        role: 'Consultant Senior'
+    },
+    updateProfile: (profile) => set((state) => ({
+        userProfile: { ...state.userProfile, ...profile }
+    })),
     toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
     setSidebarOpen: (open) => set({ isSidebarOpen: open }),
 
