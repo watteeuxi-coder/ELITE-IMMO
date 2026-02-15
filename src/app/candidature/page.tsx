@@ -43,22 +43,29 @@ export default function CandidaturePage() {
             const savedLeadId = localStorage.getItem('elite_current_lead_id');
             const storeLeads = useStore.getState().leads;
 
-            // Si on a un ID sauvegardé et valide, on l'utilise PRIORITAIREMENT
-            // Même s'il n'est pas encore trouvé dans le store (délai de sync)
+            // Si on a un ID sauvegardé, on essaie de le retrouver dans le store
             if (savedLeadId && validateUUID(savedLeadId)) {
-                setCurrentLeadId(savedLeadId);
-                setActiveLead(savedLeadId);
-                hasCreatedLead.current = true;
-                return;
+                const existingLead = storeLeads.find(l => l.id === savedLeadId);
+                if (existingLead) {
+                    setCurrentLeadId(savedLeadId);
+                    setActiveLead(savedLeadId);
+                    hasCreatedLead.current = true;
+                    return;
+                }
+                // Si on a l'ID mais pas encore dans le store, on ne régénère PAS forcément
+                // On peut tenter d'utiliser cet ID pour la création si on n'a pas encore créé de lead cette session
             }
 
             if (hasCreatedLead.current) return;
             hasCreatedLead.current = true; // Verrou immédiat
 
-            const newLeadId = generateUUID();
+            // On réutilise l'ID du localStorage s'il est valide, sinon on en génère un nouveau
+            const newLeadId = (savedLeadId && validateUUID(savedLeadId)) ? savedLeadId : generateUUID();
 
             // Protection supplémentaire : ne pas créer si l'ID est déjà dans le store
             if (storeLeads.some(l => l.id === newLeadId)) {
+                setActiveLead(newLeadId);
+                setCurrentLeadId(newLeadId);
                 return;
             }
 
