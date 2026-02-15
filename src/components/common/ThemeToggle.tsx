@@ -6,7 +6,14 @@ import { useTheme } from '../../contexts/ThemeContext'
 import { cn } from '../../lib/utils'
 
 export function ThemeToggle({ className }: { className?: string }) {
-    const { theme, toggleTheme } = useTheme()
+    const context = useTheme()
+
+    // Safety check for SSR and missing context
+    if (!context) {
+        return null
+    }
+
+    const { theme, toggleTheme } = context
 
     return (
         <button
