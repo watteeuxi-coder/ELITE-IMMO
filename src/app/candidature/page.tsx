@@ -8,22 +8,27 @@ import { useLanguage } from '../../i18n/LanguageContext'
 
 export default function CandidaturePage() {
     const { t, language } = useLanguage()
-    const { addLead, setActiveLead } = useStore()
+    const { fetchLeads, addLead, setActiveLead, leads } = useStore()
+    const hasInitialFetch = React.useRef(false)
     const hasCreatedLead = React.useRef(false)
     const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
 
     useEffect(() => {
-        if (hasCreatedLead.current) return;
-
         const initialize = async () => {
-            const savedLeadId = localStorage.getItem('elite_current_lead_id');
+            // 1. Toujours récupérer les leads existants d'abord pour peupler le dashboard/calendrier
+            if (!hasInitialFetch.current) {
+                await fetchLeads()
+                hasInitialFetch.current = true
+            }
 
+            const savedLeadId = localStorage.getItem('elite_current_lead_id');
             if (savedLeadId) {
                 setCurrentLeadId(savedLeadId);
                 setActiveLead(savedLeadId);
-                hasCreatedLead.current = true;
                 return;
             }
+
+            if (hasCreatedLead.current) return;
 
             const newLeadId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11)
             const newLead = {
@@ -34,8 +39,7 @@ export default function CandidaturePage() {
                 chatHistory: []
             } as any
 
-            // On ajoute localement et on continue sans attendre Supabase pour la fluidité
-            addLead(newLead);
+            await addLead(newLead);
             setActiveLead(newLeadId);
             setCurrentLeadId(newLeadId);
             localStorage.setItem('elite_current_lead_id', newLeadId);
@@ -43,7 +47,7 @@ export default function CandidaturePage() {
         }
 
         initialize();
-    }, [addLead, setActiveLead])
+    }, [addLead, setActiveLead, fetchLeads])
 
     return (
         <div className="min-h-screen w-full bg-gradient-to-br from-[#E0E7FF] via-white to-[#F8FAFC] flex flex-col relative">

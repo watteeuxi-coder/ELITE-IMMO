@@ -17,19 +17,24 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat } = useStore()
     const scrollRef = useRef<HTMLDivElement>(null)
 
-    // localHistory pour l'affichage immédiat (optimistic)
+    // Historique local pour l'affichage immédiat (optimistic)
     const [localHistory, setLocalHistory] = useState<ChatMessage[]>([])
+
+    // Accumulateur local pour les données du prospect (pour éviter les pertes pendant la synchro)
+    const [localLeadData, setLocalLeadData] = useState<Partial<Lead>>({})
 
     // Recherche du lead dans le store
     const storeLead = leadId ? leads.find((l: Lead) => l.id === leadId) : (storeActiveLead ? leads.find((l: Lead) => l.id === storeActiveLead) : leads[0])
 
-    // L'historique affiché est la fusion du store et de l'historique local (pour les nouveaux messages)
-    const displayedHistory = React.useMemo(() => {
-        if (!storeLead) return localHistory;
+    // Fusion des données : Store > Local > Valeurs par défaut
+    const currentLead = React.useMemo(() => {
+        const base = storeLead || { id: leadId || 'temp', name: '', chatHistory: [], aiScore: 0 } as any;
+        return { ...base, ...localLeadData };
+    }, [storeLead, localLeadData, leadId])
 
-        // On fusionne en évitant les doublons si possible, ou on fait simple : 
-        // Si le store est vide, on prend le local. Sinon on prend le store.
-        if (!storeLead.chatHistory || storeLead.chatHistory.length === 0) return localHistory;
+    // L'historique affiché
+    const displayedHistory = React.useMemo(() => {
+        if (!storeLead || !storeLead.chatHistory || storeLead.chatHistory.length === 0) return localHistory;
         return storeLead.chatHistory;
     }, [storeLead?.chatHistory, localHistory])
 
@@ -41,40 +46,32 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
     // Initialisation immédiate du message de bienvenue
     useEffect(() => {
-        // Condition : si on n'a pas encore de messages du tout
         if (displayedHistory.length === 0 && (storeLead || leadId)) {
             const initialMsg = {
                 role: 'ai' as const,
                 message: t('chat_welcome')
             }
-            // 1. Affichage immédiat local
             setLocalHistory([initialMsg])
-
-            // 2. Sync en arrière-plan
             const targetId = storeLead?.id || leadId
-            if (targetId) {
-                syncChat(targetId, initialMsg)
-            }
-
+            if (targetId) syncChat(targetId, initialMsg)
             setStep('name')
         }
     }, [storeLead?.id, leadId, displayedHistory.length, syncChat, t])
 
-    // Reprise du flux automatique basée sur les données du lead
+    // Reprise du flux automatique basée sur les données fusionnées
     useEffect(() => {
-        if (storeLead) {
-            if (storeLead.phone) setStep('complete')
-            else if (storeLead.email) setStep('phone')
-            else if (storeLead.entryDate) setStep('email')
-            else if (storeLead.hasGuarantor !== undefined) setStep('entry_date')
-            else if (storeLead.contractType) setStep('guarantor')
-            else if (storeLead.income !== undefined && storeLead.income > 0) setStep('contract')
-            else if (storeLead.name && storeLead.name !== 'Nouveau Prospect') setStep('income')
-            else if (displayedHistory.length > 0) setStep('name')
+        if (currentLead) {
+            if (currentLead.phone) setStep('complete')
+            else if (currentLead.email) setStep('phone')
+            else if (currentLead.entryDate) setStep('email')
+            else if (currentLead.hasGuarantor !== undefined) setStep('entry_date')
+            else if (currentLead.contractType) setStep('guarantor')
+            else if (currentLead.income !== undefined && currentLead.income > 0) setStep('contract')
+            else if (currentLead.name && currentLead.name !== 'Nouveau Prospect') setStep('income')
         }
-    }, [storeLead])
+    }, [currentLead])
 
-    const runAIPipeline = async (currentStep: ConversationStep, userInput: string, currentLead: Lead) => {
+    const runAIPipeline = async (currentStep: ConversationStep, userInput: string, targetLead: Lead) => {
         let aiResponse = ''
         let nextStep: ConversationStep = currentStep
         const leadUpdates: Partial<Lead> = {}
@@ -128,6 +125,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             case 'entry_date':
                 leadUpdates.entryDate = userInput
                 aiResponse = t('chat_email_ask')
+                nextStep = 'entry_date' // Petite correction si besoin, mais on passe à email
                 nextStep = 'email'
                 break
             case 'email':
@@ -137,7 +135,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 break
             case 'phone':
                 leadUpdates.phone = userInput.trim()
-                const finalScore = calculateScore({ ...currentLead, ...leadUpdates })
+                const finalScore = calculateScore({ ...targetLead, ...leadUpdates })
                 leadUpdates.aiScore = finalScore
                 leadUpdates.status = finalScore >= 80 ? 'qualified' : 'new'
                 aiResponse = t('chat_complete').replace('{score}', finalScore.toString())
@@ -151,37 +149,35 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     }
 
     const handleSend = async () => {
-        const targetLead = storeLead || ({ id: leadId, name: '', chatHistory: displayedHistory } as Lead)
-        if (!input.trim() || !targetLead || isThinking) return
+        if (!input.trim() || !currentLead || isThinking) return
 
         const userMsg = { role: 'user' as const, message: input }
-
-        // Optimistic UI
         setLocalHistory(prev => [...prev, userMsg])
         setInput('')
         setIsThinking(true)
 
-        // Sync user message
-        await syncChat(targetLead.id, userMsg)
+        const targetId = currentLead.id
+        await syncChat(targetId, userMsg)
 
-        // Réponse ultra rapide
-        await new Promise(resolve => setTimeout(resolve, 400))
+        await new Promise(resolve => setTimeout(resolve, 600))
 
-        const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, input, targetLead)
+        const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, input, currentLead)
         const aiMsg = { role: 'ai' as const, message: aiResponse }
 
-        // Optimistic UI for AI
         setLocalHistory(prev => [...prev, aiMsg])
 
-        await updateLead(targetLead.id, leadUpdates)
-        await syncChat(targetLead.id, aiMsg)
+        // Mise à jour de l'accumulateur local pour garantir la persistance immédiate
+        setLocalLeadData(prev => ({ ...prev, ...leadUpdates }))
+
+        // Mise à jour du store et de la DB
+        await updateLead(targetId, leadUpdates)
+        await syncChat(targetId, aiMsg)
 
         setIsThinking(false)
         setStep(nextStep)
     }
 
-    // On n'affiche plus le blocage "select prospect" si on a un leadId
-    if (!storeLead && !leadId) return (
+    if (!currentLead && !leadId) return (
         <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground italic">
             {t('chat_select_prospect')}
         </div>
@@ -214,7 +210,6 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                                     key={type}
                                     onClick={() => {
                                         setInput(type);
-                                        // On déclenche handleSend manuellement ou on simule l'envoi
                                         setTimeout(() => document.getElementById('chat-send-btn')?.click(), 10);
                                     }}
                                     className="px-4 py-2 bg-white border border-primary/20 rounded-xl text-sm font-bold text-primary hover:bg-primary hover:text-white transition-all shadow-sm hover:shadow-md active:scale-95"
@@ -265,16 +260,16 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 </div>
             </div>
 
-            {!standalone && storeLead && (
+            {!standalone && currentLead && (
                 <div className="flex-1 glass p-6 rounded-3xl overflow-y-auto hidden lg:block">
                     <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6 opacity-50 flex items-center gap-2">
                         <FileText className="w-4 h-4" /> {t('chat_extracted_data')}
                     </h3>
                     <div className="space-y-4">
-                        <DataCard label={t('chat_full_name')} value={storeLead.name || '—'} icon={<User className="w-4 h-4" />} />
-                        <DataCard label={t('chat_income')} value={storeLead.income ? `${storeLead.income}€/mois` : '—'} icon={<Clock className="w-4 h-4" />} />
-                        <DataCard label={t('chat_contract')} value={storeLead.contractType || '—'} icon={<BadgeCheck className="w-4 h-4" />} />
-                        <DataCard label={t('chat_entry_date')} value={storeLead.entryDate || '—'} icon={<Calendar className="w-4 h-4" />} />
+                        <DataCard label={t('chat_full_name')} value={currentLead.name || '—'} icon={<User className="w-4 h-4" />} />
+                        <DataCard label={t('chat_income')} value={currentLead.income ? `${currentLead.income}€/mois` : '—'} icon={<Clock className="w-4 h-4" />} />
+                        <DataCard label={t('chat_contract')} value={currentLead.contractType || '—'} icon={<BadgeCheck className="w-4 h-4" />} />
+                        <DataCard label={t('chat_entry_date')} value={currentLead.entryDate || '—'} icon={<Calendar className="w-4 h-4" />} />
                     </div>
                 </div>
             )}
