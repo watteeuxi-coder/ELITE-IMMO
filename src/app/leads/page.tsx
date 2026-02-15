@@ -39,13 +39,6 @@ export default function LeadsPage() {
     const filteredLeads = leads
         .filter((lead: Lead) => lead.name.toLowerCase().includes(searchTerm.toLowerCase()))
         .filter((lead: Lead) => filterOnlyQualified ? lead.aiScore >= 80 : true)
-        .filter((lead: Lead) => {
-            // Un prospect est "fantôme" s'il n'a ni nom, ni score, ni début de conversation (au moins 2 messages : AI + User)
-            const isGhost = (!lead.name || lead.name === 'Nouveau Prospect' || lead.name === '') &&
-                (lead.aiScore === null || lead.aiScore === 0) &&
-                (lead.chatHistory === undefined || lead.chatHistory.length <= 1);
-            return !isGhost;
-        })
 
     const activeLead = leads.find((l: Lead) => l.id === selectedLeadId) || filteredLeads[0]
 

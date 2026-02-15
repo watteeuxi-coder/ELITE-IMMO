@@ -19,18 +19,10 @@ export default function Home() {
     fetchLeads()
   }, [fetchLeads])
 
-  // Filtrer les "prospects fantômes" (sans interaction réelle) pour les stats
-  const activeLeads = leads.filter(lead => {
-    const isGhost = (!lead.name || lead.name === 'Nouveau Prospect' || lead.name === '') &&
-      (lead.aiScore === null || lead.aiScore === 0) &&
-      (lead.chatHistory === undefined || lead.chatHistory.length <= 1);
-    return !isGhost;
-  })
-
-  const totalProspects = activeLeads.length
-  const qualifiedLeads = activeLeads.filter(l => l.aiScore >= 80).length
-  const assignedLeads = activeLeads.filter(l => l.status === 'assigned').length
-  const visitLeads = activeLeads.filter(l => l.entryDate && l.entryDate.trim() !== '').length
+  const totalProspects = leads.length
+  const qualifiedLeads = leads.filter(l => l.aiScore >= 80).length
+  const assignedLeads = leads.filter(l => l.status === 'assigned').length
+  const visitLeads = leads.filter(l => (l as any).entryDate && (l as any).entryDate.trim() !== '').length
 
   const qualifiedPercentage = totalProspects > 0 ? Math.round((qualifiedLeads / totalProspects) * 100) : 0
   const visitPercentage = totalProspects > 0 ? Math.round((visitLeads / totalProspects) * 100) : 0
