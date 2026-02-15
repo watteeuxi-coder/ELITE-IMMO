@@ -68,7 +68,7 @@ export function Sidebar() {
             )}
 
             <div className={cn(
-                "w-64 h-screen glass-strong fixed left-0 top-0 flex flex-col p-6 z-50 shadow-2xl transition-transform duration-300 md:translate-x-0",
+                "w-64 h-screen glass-strong fixed left-0 top-0 flex flex-col p-6 z-[70] shadow-2xl transition-transform duration-300 md:translate-x-0 border-r border-white/20",
                 isSidebarOpen ? "translate-x-0" : "-translate-x-full"
             )}>
                 <div className="flex items-center justify-between mb-10 px-2">
@@ -94,9 +94,9 @@ export function Sidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                onClick={() => setSidebarOpen(false)}
+                                onClick={() => isSidebarOpen && setSidebarOpen(false)}
                                 className={cn(
-                                    "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative",
+                                    "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative cursor-pointer",
                                     isActive
                                         ? "bg-[#7084FF] text-white shadow-lg shadow-[#7084FF]/20"
                                         : "text-foreground hover:bg-white/60 hover:shadow-md"
@@ -137,9 +137,9 @@ export function Sidebar() {
 
                     <Link
                         href="/settings"
-                        onClick={() => setSidebarOpen(false)}
+                        onClick={() => isSidebarOpen && setSidebarOpen(false)}
                         className={cn(
-                            "flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all",
+                            "flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all cursor-pointer",
                             pathname === '/settings'
                                 ? "bg-[#7084FF] text-white"
                                 : "text-muted-foreground hover:bg-secondary hover:text-foreground"
