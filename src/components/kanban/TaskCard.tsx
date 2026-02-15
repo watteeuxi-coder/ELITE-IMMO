@@ -6,7 +6,7 @@ import { useLanguage } from '../../i18n/LanguageContext'
 import { Modal } from '../common/Modal'
 import { useState } from 'react'
 import { LeadDetailsPanel } from '../leads/LeadDetailsPanel'
-import { User2 } from 'lucide-react'
+import { User2, Info } from 'lucide-react'
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -48,7 +48,6 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
             style={style}
             {...attributes}
             {...listeners}
-            onClick={() => setIsPanelOpen(true)}
             className="glass p-5 rounded-3xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing group border-white/40 relative overflow-hidden"
         >
             <div className="flex items-center justify-between mb-4">
@@ -73,8 +72,18 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
                         </div>
                     )}
                     <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setIsPanelOpen(true)
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-all"
+                        title="Voir les détails"
+                    >
+                        <Info className="w-4 h-4" />
+                    </button>
+                    <button
                         onClick={handleDelete}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
                     >
                         <Trash2 className="w-4 h-4" />
                     </button>
