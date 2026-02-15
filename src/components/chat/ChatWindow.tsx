@@ -46,7 +46,16 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
     // Initialisation immédiate du message de bienvenue
     useEffect(() => {
-        if (displayedHistory.length === 0 && (storeLead || leadId)) {
+        // On ne déclenche l'initialisation que si on a un ID et que l'historique est vide
+        // ET que ce n'est pas déjà en train d'être initialisé (localHistory vide)
+        if (localHistory.length === 0 && (storeLead || leadId)) {
+            const hasExistingHistory = storeLead?.chatHistory && storeLead.chatHistory.length > 0;
+
+            if (hasExistingHistory) {
+                // Si historique existant en base, on ne renvoie rien
+                return;
+            }
+
             const initialMsg = {
                 role: 'ai' as const,
                 message: t('chat_welcome')
@@ -56,7 +65,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             if (targetId) {
                 syncChat(targetId, initialMsg)
 
-                // Notification nouveau prospect dès le début
+                // Notification nouveau prospect UNIQUEMENT si c'est vraiment une nouvelle conversation
                 addNotification({
                     lead_id: targetId,
                     type: 'new_lead',
@@ -66,7 +75,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             }
             setStep('name')
         }
-    }, [storeLead?.id, leadId, displayedHistory.length, syncChat, t, addNotification])
+    }, [storeLead?.id, leadId, localHistory.length, storeLead?.chatHistory, syncChat, t, addNotification])
 
     // Reprise du flux automatique basée sur les données fusionnées
     useEffect(() => {
