@@ -191,7 +191,7 @@ export function Navbar() {
                                                 )}
                                             >
                                                 <p className={cn("text-foreground", !notif.is_read && "font-semibold")}>
-                                                    {t(notif.message_key || `nav_notif_${notif.type}`)}
+                                                    {t(notif.message_key || `nav_notif_${notif.type}`).replace('{name}', notif.name || 'Prospect')}
                                                 </p>
                                                 <p className="text-[10px] text-muted-foreground mt-1">
                                                     {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

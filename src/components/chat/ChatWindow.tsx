@@ -61,6 +61,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                     lead_id: targetId,
                     type: 'new_lead',
                     message_key: 'notif_new_lead',
+                    name: 'Prospect'
                 })
             }
             setStep('name')
@@ -163,6 +164,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         lead_id: targetLead.id,
                         type: 'qualified',
                         message_key: 'notif_qualified_lead',
+                        name: targetLead.name || 'Prospect'
                     })
                 }
 

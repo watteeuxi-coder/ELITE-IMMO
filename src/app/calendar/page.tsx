@@ -56,18 +56,29 @@ export default function CalendarPage() {
 
                 // Try parsing different date formats
                 try {
-                    // Try DD/MM/YYYY format first
-                    if (dateStr.includes('/')) {
-                        parsedDate = parse(dateStr, 'dd/MM/yyyy', new Date())
+                    const cleanDate = dateStr.trim().replace(/^(le\s+)/i, '');
+
+                    // Try DD/MM/YYYY format
+                    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(cleanDate)) {
+                        parsedDate = parse(cleanDate, 'dd/MM/yyyy', new Date())
                     }
-                    // Try ISO format
-                    else if (dateStr.includes('-')) {
-                        parsedDate = new Date(dateStr)
+                    // Try DD/MM (assume current or next year)
+                    else if (/^\d{1,2}\/\d{1,2}$/.test(cleanDate)) {
+                        const currentYear = new Date().getFullYear();
+                        parsedDate = parse(`${cleanDate}/${currentYear}`, 'dd/MM/yyyy', new Date());
+
+                        // If date is in the past, assume next year
+                        if (parsedDate < today) {
+                            parsedDate = parse(`${cleanDate}/${currentYear + 1}`, 'dd/MM/yyyy', new Date());
+                        }
                     }
-                    // Try natural language or fallback
+                    // Try ISO format (YYYY-MM-DD)
+                    else if (/^\d{4}-\d{2}-\d{2}/.test(cleanDate)) {
+                        parsedDate = new Date(cleanDate)
+                    }
                     else {
-                        parsedDate = new Date()
-                        parsedDate.setDate(parsedDate.getDate() + 7)
+                        // Fallback to JS Date parsing for natural language if possible
+                        parsedDate = new Date(cleanDate)
                     }
                 } catch {
                     parsedDate = new Date()

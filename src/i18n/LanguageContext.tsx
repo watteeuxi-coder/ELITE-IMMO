@@ -23,6 +23,8 @@ const translations: Record<Language, Record<string, string>> = {
         "nav_user_name": "Agent Elite",
         "nav_user_role": "Administrateur",
         "nav_notif_new": "Nouveau lead créé",
+        "notif_new_lead": "Nouveau prospect : {name}",
+        "notif_qualified_lead": "Profil Élite qualifié : {name}",
 
         // Sidebar
         "side_dashboard": "Tableau de Bord",
@@ -192,6 +194,8 @@ const translations: Record<Language, Record<string, string>> = {
         "nav_user_name": "Elite Agent",
         "nav_user_role": "Administrator",
         "nav_notif_new": "New lead created",
+        "notif_new_lead": "New prospect: {name}",
+        "notif_qualified_lead": "Elite profile qualified: {name}",
 
         // Sidebar
         "side_dashboard": "Dashboard",

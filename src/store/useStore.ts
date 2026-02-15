@@ -40,6 +40,7 @@ export interface EliteNotification {
     type: 'new_lead' | 'qualified' | 'visit';
     message_key: string;
     is_read: boolean;
+    name?: string;
 }
 
 export interface UserProfile {
