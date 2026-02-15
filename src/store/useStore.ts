@@ -6,6 +6,13 @@ export interface ChatMessage {
     message: string;
 }
 
+export interface Document {
+    id: string;
+    name: string;
+    type: string;
+    uploadedAt: string;
+}
+
 export interface Lead {
     id: string;
     name: string;
@@ -19,6 +26,10 @@ export interface Lead {
     aiScore: number;
     status: 'new' | 'qualified' | 'visit' | 'applied' | 'signed';
     chatHistory: ChatMessage[];
+    agencyNotes?: string;
+    assignedAgent?: string;
+    documents?: Document[];
+    isArchived?: boolean;
 }
 
 export interface EliteNotification {
@@ -45,6 +56,7 @@ interface EliteStore {
     addLead: (lead: Lead) => Promise<void>;
     updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
     deleteLead: (id: string) => Promise<void>;
+    archiveLead: (id: string) => Promise<void>;
     setActiveLead: (id: string | null) => void;
     calculateScore: (lead: Partial<Lead>) => number;
     syncChat: (leadId: string, message: ChatMessage) => Promise<void>;
@@ -118,7 +130,11 @@ export const useStore = create<EliteStore>((set, get) => ({
                     phone: lead.phone,
                     aiScore: lead.ai_score,
                     status: lead.status,
-                    chatHistory: messages || []
+                    chatHistory: messages || [],
+                    agencyNotes: lead.agency_notes,
+                    assignedAgent: lead.assigned_agent,
+                    documents: lead.documents || [],
+                    isArchived: lead.is_archived || false
                 } as Lead
             }))
 
@@ -158,7 +174,11 @@ export const useStore = create<EliteStore>((set, get) => ({
                 email: lead.email,
                 phone: lead.phone,
                 ai_score: lead.aiScore,
-                status: lead.status
+                status: lead.status,
+                agency_notes: lead.agencyNotes,
+                assigned_agent: lead.assignedAgent,
+                documents: lead.documents || [],
+                is_archived: lead.isArchived || false
             }])
 
             if (error) {
@@ -182,7 +202,7 @@ export const useStore = create<EliteStore>((set, get) => ({
 
     updateLead: async (id, updates) => {
         try {
-            const supabaseUpdates: Record<string, string | number | boolean | null> = {}
+            const supabaseUpdates: Record<string, string | number | boolean | null | Document[]> = {}
             if (updates.name !== undefined) supabaseUpdates.name = updates.name
             if (updates.income !== undefined) supabaseUpdates.income = updates.income
             if (updates.contractType !== undefined) supabaseUpdates.contract_type = updates.contractType
@@ -193,6 +213,10 @@ export const useStore = create<EliteStore>((set, get) => ({
             if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone
             if (updates.aiScore !== undefined) supabaseUpdates.ai_score = updates.aiScore
             if (updates.status !== undefined) supabaseUpdates.status = updates.status
+            if (updates.agencyNotes !== undefined) supabaseUpdates.agency_notes = updates.agencyNotes
+            if (updates.assignedAgent !== undefined) supabaseUpdates.assigned_agent = updates.assignedAgent
+            if (updates.documents !== undefined) supabaseUpdates.documents = updates.documents
+            if (updates.isArchived !== undefined) supabaseUpdates.is_archived = updates.isArchived
 
             if (Object.keys(supabaseUpdates).length > 0) {
                 const { error } = await supabase
@@ -227,6 +251,28 @@ export const useStore = create<EliteStore>((set, get) => ({
             }))
         } catch (error) {
             console.error('Error deleting lead:', error)
+        }
+    },
+
+    archiveLead: async (id) => {
+        try {
+            const { error } = await supabase
+                .from('leads')
+                .update({ is_archived: true })
+                .eq('id', id)
+
+            if (error) {
+                console.error('Supabase Error (archive):', error)
+                throw error
+            }
+
+            set((state) => ({
+                leads: state.leads.map((l) =>
+                    l.id === id ? { ...l, isArchived: true } : l
+                )
+            }))
+        } catch (error) {
+            console.error('Error archiving lead:', error)
         }
     },
 

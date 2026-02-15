@@ -5,6 +5,8 @@ import { Lead, useStore } from '../../store/useStore'
 import { useLanguage } from '../../i18n/LanguageContext'
 import { Modal } from '../common/Modal'
 import { useState } from 'react'
+import { LeadDetailsPanel } from '../leads/LeadDetailsPanel'
+import { User2 } from 'lucide-react'
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -13,6 +15,7 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
     const { deleteLead } = useStore()
     const { t, language } = useLanguage()
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+    const [isPanelOpen, setIsPanelOpen] = useState(false)
     const {
         attributes,
         listeners,
@@ -45,6 +48,7 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
             style={style}
             {...attributes}
             {...listeners}
+            onClick={() => setIsPanelOpen(true)}
             className="glass p-5 rounded-3xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing group border-white/40 relative overflow-hidden"
         >
             <div className="flex items-center justify-between mb-4">
@@ -59,6 +63,15 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
                         <BadgeCheck className="w-3.5 h-3.5 text-primary" />
                         <span className="text-xs font-black text-primary">{lead.aiScore || 0}%</span>
                     </div>
+                    {/* Assigned Agent Badge */}
+                    {lead.assignedAgent && (
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                            <User2 className="w-3 h-3 text-green-600 dark:text-green-400" />
+                            <span className="text-[10px] font-bold text-green-700 dark:text-green-300 uppercase tracking-wider">
+                                {lead.assignedAgent.split(' ')[0]}
+                            </span>
+                        </div>
+                    )}
                     <button
                         onClick={handleDelete}
                         className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-all"
@@ -117,6 +130,11 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
                     </div>
                 </div>
             </Modal>
+            <LeadDetailsPanel
+                lead={lead}
+                isOpen={isPanelOpen}
+                onClose={() => setIsPanelOpen(false)}
+            />
         </div>
     )
 })

@@ -7,6 +7,7 @@ import { StatsCard } from '../components/dashboard/StatsCard'
 import { ActivityChart } from '../components/dashboard/ActivityChart'
 import { RecentActivitiesTable } from '../components/dashboard/RecentActivitiesTable'
 import { UrgentDossiersSection } from '../components/dashboard/UrgentDossiersSection'
+import { EfficiencyCounter } from '../components/dashboard/EfficiencyCounter'
 import { useLanguage } from '../i18n/LanguageContext'
 import { useStore } from '../store/useStore'
 
@@ -90,6 +91,9 @@ export default function Home() {
           <UrgentDossiersSection />
         </div>
       </div>
+
+      {/* Efficiency Counter - New Feature */}
+      <EfficiencyCounter />
 
       {/* Recent Activities Table */}
       <div className="glass p-4 md:p-8 rounded-3xl overflow-x-auto">

@@ -9,6 +9,7 @@ import { cn } from '../../lib/utils'
 import { useStore, Lead } from '../../store/useStore'
 import { useLanguage } from '../../i18n/LanguageContext'
 import { LanguageSelector } from './LanguageSelector'
+import { ThemeToggle } from '../common/ThemeToggle'
 import { useEffect } from 'react'
 
 export function Navbar() {
@@ -115,6 +116,8 @@ export function Navbar() {
             {/* Right Section: Actions & User Info */}
             <div className="flex items-center gap-3 md:gap-6">
                 <LanguageSelector className="hidden sm:flex border-none bg-transparent shadow-none p-0 h-auto" />
+
+                <ThemeToggle className="hidden sm:flex" />
 
                 <button
                     onClick={handleQuickAddLead}

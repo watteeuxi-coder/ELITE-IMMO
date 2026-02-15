@@ -1,9 +1,10 @@
 "use client"
 
-import React from 'react'
 import { Column } from './Column'
 import { useStore, Lead } from '../../store/useStore'
 import { useLanguage } from '../../i18n/LanguageContext'
+import { useState, useEffect } from 'react'
+import { Toast } from '../common/Toast'
 
 import {
     DndContext,
@@ -16,8 +17,10 @@ import {
 } from '@dnd-kit/core'
 
 export function KanbanBoard() {
-    const { leads, updateLead } = useStore()
-    const { t } = useLanguage()
+    const { leads, updateLead, archiveLead } = useStore()
+    const { t, language } = useLanguage()
+    const [toastLead, setToastLead] = useState<Lead | null>(null)
+    const [prevLeadsStatus, setPrevLeadsStatus] = useState<Map<string, Lead['status']>>(new Map())
 
     const STAGES: { title: string, status: Lead['status'] }[] = [
         { title: t('kanban_stage_new'), status: 'new' },
@@ -26,6 +29,20 @@ export function KanbanBoard() {
         { title: t('kanban_stage_applied'), status: 'applied' },
         { title: t('kanban_stage_signed'), status: 'signed' },
     ]
+
+    // Detect when a lead moves to 'signed' status
+    useEffect(() => {
+        leads.forEach(lead => {
+            const prevStatus = prevLeadsStatus.get(lead.id)
+            if (prevStatus !== 'signed' && lead.status === 'signed' && !lead.isArchived) {
+                setToastLead(lead)
+            }
+        })
+        // Update the previous status map
+        const newMap = new Map<string, Lead['status']>()
+        leads.forEach(lead => newMap.set(lead.id, lead.status))
+        setPrevLeadsStatus(newMap)
+    }, [leads, prevLeadsStatus])
     const sensors = useSensors(
         useSensor(MouseSensor, {
             activationConstraint: {
@@ -60,6 +77,16 @@ export function KanbanBoard() {
         }
     }
 
+    const handleArchive = async () => {
+        if (toastLead) {
+            await archiveLead(toastLead.id)
+            setToastLead(null)
+        }
+    }
+
+    // Filter out archived leads
+    const activeLeads = leads.filter((l: Lead) => !l.isArchived)
+
     return (
         <DndContext
             sensors={sensors}
@@ -72,7 +99,7 @@ export function KanbanBoard() {
                         <Column
                             title={stage.title}
                             status={stage.status}
-                            leads={leads
+                            leads={activeLeads
                                 .filter((l: Lead) => l.status === stage.status)
                                 .sort((a: Lead, b: Lead) => (b.aiScore || 0) - (a.aiScore || 0))
                             }
@@ -80,6 +107,19 @@ export function KanbanBoard() {
                     </div>
                 ))}
             </div>
+            {toastLead && (
+                <Toast
+                    message={language === 'fr'
+                        ? `${toastLead.name} est maintenant en statut Signé !`
+                        : `${toastLead.name} is now marked as Signed!`
+                    }
+                    action={{
+                        label: language === 'fr' ? 'Clôturer le dossier' : 'Close Case',
+                        onClick: handleArchive
+                    }}
+                    onClose={() => setToastLead(null)}
+                />
+            )}
         </DndContext>
     )
 }

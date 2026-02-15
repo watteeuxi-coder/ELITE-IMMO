@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 import { MainLayout } from "../components/layout/MainLayout";
 
 import { LanguageProvider } from "../i18n/LanguageContext";
+import { ThemeProvider } from "../contexts/ThemeContext";
 
 export default function RootLayout({
   children,
@@ -23,11 +24,13 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <body className={`${inter.className} min-h-screen text-foreground`}>
-        <LanguageProvider>
-          <MainLayout>
-            {children}
-          </MainLayout>
-        </LanguageProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <MainLayout>
+              {children}
+            </MainLayout>
+          </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
