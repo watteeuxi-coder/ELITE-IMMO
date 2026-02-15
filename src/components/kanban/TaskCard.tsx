@@ -6,7 +6,7 @@ import { useLanguage } from '../../i18n/LanguageContext'
 import { Modal } from '../common/Modal'
 import { useState } from 'react'
 import { LeadDetailsPanel } from '../leads/LeadDetailsPanel'
-import { User2, Info } from 'lucide-react'
+import { User2, Info, FileText } from 'lucide-react'
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -58,36 +58,54 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
                     <p className="text-sm font-bold text-foreground truncate max-w-[120px]">{lead.name || t('common_new') || 'Nouveau'}</p>
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/5 rounded-xl border border-primary/10">
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/10 dark:bg-primary/20 rounded-xl border border-primary/20">
                         <BadgeCheck className="w-3.5 h-3.5 text-primary" />
                         <span className="text-xs font-black text-primary">{lead.aiScore || 0}%</span>
                     </div>
-                    {/* Assigned Agent Badge */}
-                    {lead.assignedAgent && (
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                            <User2 className="w-3 h-3 text-green-600 dark:text-green-400" />
-                            <span className="text-[10px] font-bold text-green-700 dark:text-green-300 uppercase tracking-wider">
-                                {lead.assignedAgent.split(' ')[0]}
-                            </span>
-                        </div>
-                    )}
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            setIsPanelOpen(true)
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-primary hover:bg-primary/10 rounded-lg transition-all"
-                        title="Voir les détails"
-                    >
-                        <Info className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
+
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                setIsPanelOpen(true)
+                            }}
+                            className="p-2 text-primary hover:bg-primary/10 rounded-xl transition-all border border-primary/20 bg-primary/5"
+                            title="Voir les détails"
+                        >
+                            <Info className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={handleDelete}
+                            className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/40 rounded-xl transition-all border border-red-200 dark:border-red-900/50"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
                 </div>
+            </div>
+
+            {/* CRM Indicators - More prominent */}
+            <div className="flex flex-wrap gap-2 mb-4">
+                {lead.assignedAgent ? (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/40 rounded-xl border border-green-300 dark:border-green-800 shadow-sm">
+                        <User2 className="w-3.5 h-3.5 text-green-700 dark:text-green-400" />
+                        <span className="text-[10px] font-black text-green-800 dark:text-green-300 uppercase">
+                            {lead.assignedAgent}
+                        </span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-secondary/50 rounded-xl border border-border italic opacity-70">
+                        <User2 className="w-3.5 h-3.5 text-muted-foreground" />
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Non assigné</span>
+                    </div>
+                )}
+
+                {lead.agencyNotes && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-xl border border-amber-300 dark:border-amber-800 shadow-sm">
+                        <FileText className="w-3.5 h-3.5 text-amber-700 dark:text-amber-400" />
+                        <span className="text-[10px] font-black text-amber-800 dark:text-amber-300 uppercase">Notes</span>
+                    </div>
+                )}
             </div>
 
             <div className="space-y-3 mt-5">
@@ -116,6 +134,7 @@ export const TaskCard = memo(({ lead }: { lead: Lead }) => {
                     ))}
                 </div>
             </div>
+
             <Modal
                 isOpen={isDeleteModalOpen}
                 onClose={() => setIsDeleteModalOpen(false)}

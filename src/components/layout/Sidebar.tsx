@@ -30,6 +30,11 @@ export function Sidebar() {
     const [isResetModalOpen, setIsResetModalOpen] = useState(false)
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
 
+    // Reset sidebar on path change (useful for mobile)
+    React.useEffect(() => {
+        if (isSidebarOpen) setSidebarOpen(false)
+    }, [pathname])
+
     const sidebarItems = [
         { name: t('side_dashboard'), icon: LayoutDashboard, href: '/' },
         { name: t('side_leads'), icon: Users, href: '/leads' },
@@ -59,10 +64,10 @@ export function Sidebar() {
 
     return (
         <>
-            {/* Mobile Backdrop */}
+            {/* Mobile Backdrop - Simplified condition and z-index */}
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[45] md:hidden transition-all duration-300"
+                    className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[65] md:hidden transition-opacity pointer-events-auto"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}

@@ -30,19 +30,8 @@ export function KanbanBoard() {
         { title: t('kanban_stage_signed'), status: 'signed' },
     ]
 
-    // Detect when a lead moves to 'signed' status
-    useEffect(() => {
-        leads.forEach(lead => {
-            const prevStatus = prevLeadsStatus.get(lead.id)
-            if (prevStatus !== 'signed' && lead.status === 'signed' && !lead.isArchived) {
-                setToastLead(lead)
-            }
-        })
-        // Update the previous status map
-        const newMap = new Map<string, Lead['status']>()
-        leads.forEach(lead => newMap.set(lead.id, lead.status))
-        setPrevLeadsStatus(newMap)
-    }, [leads, prevLeadsStatus])
+    // Simplified: Toast is now triggered directly from handleDragEnd for reliability
+
     const sensors = useSensors(
         useSensor(MouseSensor, {
             activationConstraint: {
@@ -66,14 +55,24 @@ export function KanbanBoard() {
 
         // If dropped over a column (status)
         if (STAGES.some(s => s.status === overId)) {
-            updateLead(activeId, { status: overId as Lead['status'] })
+            const currentLead = leads.find(l => l.id === activeId)
+            if (currentLead && currentLead.status !== overId) {
+                updateLead(activeId, { status: overId as Lead['status'] })
+                if (overId === 'signed') {
+                    setToastLead({ ...currentLead, status: 'signed' })
+                }
+            }
             return
         }
 
         // If dropped over another card
         const overLead = leads.find((l: Lead) => l.id === overId)
-        if (overLead && overLead.status !== leads.find((l: Lead) => l.id === activeId)?.status) {
+        const activeLeadObj = leads.find((l: Lead) => l.id === activeId)
+        if (overLead && activeLeadObj && overLead.status !== activeLeadObj.status) {
             updateLead(activeId, { status: overLead.status })
+            if (overLead.status === 'signed') {
+                setToastLead({ ...activeLeadObj, status: 'signed' })
+            }
         }
     }
 

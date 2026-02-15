@@ -110,23 +110,23 @@ export function LeadDetailsPanel({ lead, isOpen, onClose }: LeadDetailsPanelProp
                         <>
                             {/* Basic Info */}
                             <div className="space-y-4">
-                                <h3 className="text-sm font-black text-foreground uppercase tracking-wider">
+                                <h3 className="text-sm font-black text-foreground/80 dark:text-white uppercase tracking-wider">
                                     {language === 'fr' ? 'Info Générale' : 'General Info'}
                                 </h3>
-                                <div className="glass p-5 rounded-2xl space-y-3">
-                                    <div className="flex items-center justify-between">
+                                <div className="glass-strong p-5 rounded-2xl space-y-3 bg-white/50 dark:bg-white/5">
+                                    <div className="flex items-center justify-between border-b border-border/50 pb-2">
                                         <span className="text-xs font-bold text-muted-foreground uppercase">
                                             {t('chat_monthly_income')}
                                         </span>
                                         <span className="font-black text-foreground">{lead.income || 0}€</span>
                                     </div>
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between border-b border-border/50 pb-2">
                                         <span className="text-xs font-bold text-muted-foreground uppercase">
                                             {language === 'fr' ? 'Type de contrat' : 'Contract Type'}
                                         </span>
                                         <span className="font-bold text-foreground">{lead.contractType || 'N/C'}</span>
                                     </div>
-                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center justify-between border-b border-border/50 pb-2">
                                         <span className="text-xs font-bold text-muted-foreground uppercase">AI Score</span>
                                         <span className="font-black text-primary text-lg">{lead.aiScore}%</span>
                                     </div>

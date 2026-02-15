@@ -23,7 +23,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] relative">
+        <div className="min-h-screen bg-background relative transition-colors duration-300">
 
             <Sidebar />
 
