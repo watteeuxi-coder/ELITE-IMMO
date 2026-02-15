@@ -31,6 +31,7 @@ export interface Lead {
     documents?: Document[];
     isArchived?: boolean;
     visitConfirmed?: boolean;
+    createdAt?: string;
 }
 
 export interface EliteNotification {
@@ -142,7 +143,8 @@ export const useStore = create<EliteStore>((set, get) => ({
                         assignedAgent: lead.assigned_agent,
                         documents: lead.documents || [],
                         isArchived: lead.is_archived || false,
-                        visitConfirmed: lead.visit_confirmed || false
+                        visitConfirmed: lead.visit_confirmed || false,
+                        createdAt: lead.created_at
                     } as Lead
                 } catch (e) {
                     console.error(`Catastrophic error for lead ${lead.id}:`, e)

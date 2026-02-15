@@ -26,6 +26,7 @@ export default function Home() {
 
   const qualifiedPercentage = totalProspects > 0 ? Math.round((qualifiedLeads / totalProspects) * 100) : 0
   const visitPercentage = totalProspects > 0 ? Math.round((visitLeads / totalProspects) * 100) : 0
+  const assignedPercentage = totalProspects > 0 ? Math.round((assignedLeads / totalProspects) * 100) : 0
 
   return (
     <div className="max-w-[1400px] mx-auto space-y-8 animate-in fade-in duration-700">
@@ -46,7 +47,7 @@ export default function Home() {
             value={totalProspects.toString()}
             icon={Users}
             color="blue"
-            trend={totalProspects > 0 ? "Initial" : ""}
+            trend={totalProspects > 0 ? "100%" : ""}
             trendUp={true}
           />
         </Link>
@@ -76,7 +77,7 @@ export default function Home() {
             value={assignedLeads.toString()}
             icon={LayoutDashboard}
             color="orange"
-            trend=""
+            trend={`${assignedPercentage}%`}
             trendUp={true}
           />
         </Link>

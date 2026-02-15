@@ -29,8 +29,9 @@ export function ActivityChart() {
     const leadCounts = monthNames.map((name, index) => {
         const count = leads.filter(lead => {
             if (lead.status !== 'assigned') return false
-            if (!lead.entryDate) return false
-            const d = new Date(lead.entryDate)
+            const dateToUse = lead.createdAt || lead.entryDate
+            if (!dateToUse) return false
+            const d = new Date(dateToUse)
             return d.getFullYear() === currentYear && d.getMonth() === index
         }).length
 
