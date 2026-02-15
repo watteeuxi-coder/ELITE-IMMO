@@ -58,12 +58,16 @@ export default function CandidaturePage() {
             if (hasCreatedLead.current) return;
 
             const newLeadId = generateUUID();
+
+            // Protection supplémentaire : ne pas créer si l'ID est déjà dans le store
+            if (storeLeads.some(l => l.id === newLeadId)) {
+                hasCreatedLead.current = true;
+                return;
+            }
+
             const newLead = {
                 id: newLeadId,
                 name: '',
-                income: 0,
-                contractType: 'CDI',
-                hasGuarantor: false,
                 status: 'new' as const,
                 aiScore: 0,
                 chatHistory: []

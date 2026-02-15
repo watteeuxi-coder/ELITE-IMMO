@@ -180,19 +180,31 @@ export const useStore = create<EliteStore>((set, get) => ({
     },
 
     addLead: async (lead) => {
+        // Prévenir les doublons locaux immédiats (qui arrivent souvent avant le rafraîchissement Realtime)
+        const currentLeads = get().leads;
+        if (currentLeads.some(l => l.id === lead.id)) {
+            console.log(`Lead ${lead.id} already exists in store, skipping addLead.`);
+            return;
+        }
+
         try {
             // Builder pattern pour addLead aussi, pour éviter tout 'undefined'
+            // MAIS on ne met PAS de valeurs par défaut qui bloquent le flux du chatbot
             const insertData: any = { id: lead.id }
             insertData.name = lead.name || 'Nouveau Prospect'
             insertData.status = lead.status || 'new'
             insertData.ai_score = lead.aiScore || 0
-            insertData.income = lead.income || 0
-            insertData.contract_type = lead.contractType || null
-            insertData.has_guarantor = lead.hasGuarantor !== undefined ? lead.hasGuarantor : false
-            insertData.entry_date = lead.entryDate || null
+
+            // On laisse ces champs NULL en base s'ils ne sont pas fournis, 
+            // pour que le chatbot pose les questions (Revenus, Contrat, etc.)
+            insertData.income = lead.income ?? null
+            insertData.contract_type = lead.contractType ?? null
+            insertData.has_guarantor = lead.hasGuarantor ?? null
+            insertData.entry_date = lead.entryDate ?? null
             insertData.visit_time = lead.visitTime || '10:00'
-            insertData.email = lead.email || null
-            insertData.phone = lead.phone || null
+            insertData.email = lead.email ?? null
+            insertData.phone = lead.phone ?? null
+
             insertData.agency_notes = lead.agencyNotes || null
             insertData.assigned_agent = lead.assignedAgent || null
             insertData.documents = lead.documents || []
@@ -209,7 +221,6 @@ export const useStore = create<EliteStore>((set, get) => ({
             set((state) => ({ leads: [lead, ...state.leads] }))
         } catch (error) {
             console.error('Error adding lead:', error)
-            alert(`Erreur critique Supabase (addLead). Vérifiez votre connexion.`)
         }
     },
 

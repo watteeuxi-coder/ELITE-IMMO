@@ -70,13 +70,23 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     // Reprise du flux automatique basée sur les données fusionnées
     useEffect(() => {
         if (currentLead) {
-            if (currentLead.phone) setStep('complete')
-            else if (currentLead.email) setStep('phone')
-            else if (currentLead.entryDate) setStep('email')
-            else if (currentLead.hasGuarantor !== undefined) setStep('entry_date')
-            else if (currentLead.contractType) setStep('guarantor')
-            else if (currentLead.income !== undefined && currentLead.income > 0) setStep('contract')
-            else if (currentLead.name && currentLead.name !== 'Nouveau Prospect' && currentLead.name !== '') setStep('income')
+            // Un prospect est considéré comme ayant complété une étape s'il a une valeur non-nulle et non-par-défaut
+            const hasName = currentLead.name && currentLead.name !== 'Nouveau Prospect' && currentLead.name !== ''
+            const hasIncome = currentLead.income !== undefined && currentLead.income !== null && currentLead.income > 0
+            const hasContract = currentLead.contractType !== undefined && currentLead.contractType !== null && currentLead.contractType !== ''
+            const hasGuarantor = currentLead.hasGuarantor !== undefined && currentLead.hasGuarantor !== null
+            const hasEntryDate = currentLead.entryDate !== undefined && currentLead.entryDate !== null && currentLead.entryDate !== ''
+            const hasEmail = currentLead.email !== undefined && currentLead.email !== null && currentLead.email !== ''
+            const hasPhone = currentLead.phone !== undefined && currentLead.phone !== null && currentLead.phone !== ''
+
+            if (hasPhone) setStep('complete')
+            else if (hasEmail) setStep('phone')
+            else if (hasEntryDate) setStep('email')
+            else if (hasGuarantor) setStep('entry_date')
+            else if (hasContract) setStep('guarantor')
+            else if (hasIncome) setStep('contract')
+            else if (hasName) setStep('income')
+            else setStep('name') // Par défaut au début si rien n'est saisi
         }
     }, [currentLead])
 
