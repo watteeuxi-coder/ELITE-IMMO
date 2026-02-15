@@ -70,52 +70,16 @@ export default function Home() {
             trendUp={true}
           />
         </Link>
-        <div className="relative">
-          <Link href="/kanban" className="block hover:scale-[1.02] transition-transform">
-            <StatsCard
-              label={t('dash_stats_assigned')}
-              value={assignedLeads.toString()}
-              icon={LayoutDashboard}
-              color="orange"
-              trend=""
-              trendUp={true}
-            />
-          </Link>
-          {/* Daily Goal Progress */}
-          {(() => {
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            const assignedToday = leads.filter(l => {
-              if (l.status !== 'assigned' || !l.entryDate) return false
-              const entryDate = new Date(l.entryDate)
-              entryDate.setHours(0, 0, 0, 0)
-              return entryDate.getTime() === today.getTime()
-            }).length
-            const progress = Math.min((assignedToday / 2) * 100, 100)
-            const goalMet = assignedToday >= 2
-
-            return (
-              <div className="absolute -bottom-3 left-0 right-0 px-4">
-                <div className="glass-strong p-3 rounded-2xl">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-foreground/70">
-                      {t('dash_daily_goal') || 'Objectif du jour'}
-                    </span>
-                    <span className={`text-xs font-black ${goalMet ? 'text-green-500' : 'text-orange-500'}`}>
-                      {assignedToday}/2
-                    </span>
-                  </div>
-                  <div className="h-2 bg-secondary/30 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-500 ${goalMet ? 'bg-gradient-to-r from-green-400 to-green-600' : 'bg-gradient-to-r from-orange-400 to-orange-600'}`}
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )
-          })()}
-        </div>
+        <Link href="/kanban" className="block hover:scale-[1.02] transition-transform">
+          <StatsCard
+            label={t('dash_stats_assigned')}
+            value={assignedLeads.toString()}
+            icon={LayoutDashboard}
+            color="orange"
+            trend=""
+            trendUp={true}
+          />
+        </Link>
       </div>
 
       {/* Chart + Recent Activities */}
