@@ -43,28 +43,13 @@ export default function CandidaturePage() {
             const savedLeadId = localStorage.getItem('elite_current_lead_id');
             const storeLeads = useStore.getState().leads;
 
-            // Si on a déjà un ID dans le state (re-rendu), on s'arrête là
-            if (currentLeadId && validateUUID(currentLeadId)) {
-                return;
-            }
-
-            // Si on a un ID sauvegardé, on vérifie sa validité ET son existence en base
+            // Si on a un ID sauvegardé et valide, on l'utilise PRIORITAIREMENT
+            // Même s'il n'est pas encore trouvé dans le store (délai de sync)
             if (savedLeadId && validateUUID(savedLeadId)) {
-                const existingLead = storeLeads.find(l => l.id === savedLeadId);
-                if (existingLead) {
-                    setCurrentLeadId(savedLeadId);
-                    setActiveLead(savedLeadId);
-                    return;
-                } else {
-                    // Si on vient de créer le lead (hasCreatedLead est vrai), on ne régénère pas d'ID
-                    // On attend que le store se mette à jour via Realtime
-                    if (hasCreatedLead.current) {
-                        setCurrentLeadId(savedLeadId);
-                        setActiveLead(savedLeadId);
-                        return;
-                    }
-                    console.warn("Lead ID in localStorage not found in Supabase. Generating new one.");
-                }
+                setCurrentLeadId(savedLeadId);
+                setActiveLead(savedLeadId);
+                hasCreatedLead.current = true;
+                return;
             }
 
             if (hasCreatedLead.current) return;

@@ -83,8 +83,16 @@ export function KanbanBoard() {
         }
     }
 
-    // Filter out archived leads
-    const activeLeads = leads.filter((l: Lead) => !l.isArchived)
+    // Filter out archived leads AND ghost leads (no interaction)
+    const activeLeads = leads.filter((l: Lead) => {
+        if (l.isArchived) return false;
+
+        const isGhost = (!l.name || l.name === 'Nouveau Prospect' || l.name === '') &&
+            (l.aiScore === null || l.aiScore === 0) &&
+            (l.chatHistory === undefined || l.chatHistory.length <= 1);
+
+        return !isGhost;
+    })
 
     return (
         <DndContext
