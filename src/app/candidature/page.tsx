@@ -8,23 +8,27 @@ import { useLanguage } from '../../i18n/LanguageContext'
 
 export default function CandidaturePage() {
     const { t, language } = useLanguage()
-    const { addLead, setActiveLead, leads } = useStore()
-    const hasCreatedLead = React.useRef(false)
+    const { addLead, setActiveLead, fetchLeads, leads } = useStore()
+    const hasInitialFetch = React.useRef(false)
     const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
 
     useEffect(() => {
-        if (hasCreatedLead.current) return;
-
         const initialize = async () => {
+            // 1. Toujours récupérer les leads existants d'abord
+            if (!hasInitialFetch.current) {
+                await fetchLeads()
+                hasInitialFetch.current = true
+            }
+
             const savedLeadId = localStorage.getItem('elite_current_lead_id');
 
             if (savedLeadId) {
                 setCurrentLeadId(savedLeadId);
                 setActiveLead(savedLeadId);
-                hasCreatedLead.current = true;
                 return;
             }
 
+            // 2. Créer un nouveau lead si rien n'est sauvegardé
             const newLeadId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11)
             const newLead = {
                 id: newLeadId,
@@ -34,16 +38,17 @@ export default function CandidaturePage() {
                 chatHistory: []
             } as any
 
-            // On ajoute le lead et on le définit comme actif immédiatement
             await addLead(newLead);
             setActiveLead(newLeadId);
             setCurrentLeadId(newLeadId);
             localStorage.setItem('elite_current_lead_id', newLeadId);
-            hasCreatedLead.current = true;
         }
 
         initialize();
-    }, [addLead, setActiveLead])
+    }, [addLead, setActiveLead, fetchLeads])
+
+    // Le lead est prêt si on a un ID et qu'il est présent dans le store (le store est mis à jour soit par fetchLeads soit par addLead)
+    const isReady = currentLeadId && leads.some(l => l.id === currentLeadId)
 
     return (
         <div className="min-h-screen w-full bg-gradient-to-br from-[#E0E7FF] via-white to-[#F8FAFC] flex flex-col relative">
@@ -63,14 +68,14 @@ export default function CandidaturePage() {
 
             <div className="flex-1 flex items-center justify-center px-4 md:px-12 pb-8">
                 <div className="w-full max-w-[1000px] h-full max-h-[800px]">
-                    {currentLeadId && leads.some(l => l.id === currentLeadId) && (
+                    {isReady ? (
                         <div className="h-full backdrop-blur-2xl bg-white/80 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/40 overflow-hidden">
                             <ChatWindow leadId={currentLeadId} standalone={true} />
                         </div>
-                    )}
-                    {(!currentLeadId || !leads.some(l => l.id === currentLeadId)) && (
-                        <div className="h-full flex items-center justify-center text-muted-foreground italic animate-pulse">
-                            Initialisation du chatbot...
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center gap-4 text-muted-foreground italic">
+                            <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                            <p className="animate-pulse">{t('chat_select_prospect')}</p>
                         </div>
                     )}
                 </div>
