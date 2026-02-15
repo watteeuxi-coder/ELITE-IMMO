@@ -43,7 +43,8 @@ export default function CandidaturePage() {
                 } as any
 
                 await addLead(newLead);
-                await fetchLeads(); // Force sync
+                // On n'appelle plus fetchLeads ici car addLead met déjà à jour le store local
+                // et fetchLeads pourrait nous renvoyer une liste vide si Supabase n'est pas encore synchro.
                 setActiveLead(newLeadId);
                 setCurrentLeadId(newLeadId);
 

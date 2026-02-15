@@ -54,10 +54,11 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 role: 'ai' as const,
                 message: t('chat_welcome')
             }
+            // Si c'est un lead temporaire, on doit s'assurer que le message est envoyé
             syncChat(activeLead.id, initialMsg)
             setTimeout(() => setStep('name'), 0)
         }
-    }, [activeLead?.id, language, syncChat, t])
+    }, [activeLead?.id, activeLead?.chatHistory?.length, language, syncChat, t])
 
     // Resume conversation step based on filled fields
     useEffect(() => {
