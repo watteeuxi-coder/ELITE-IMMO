@@ -169,6 +169,10 @@ export const useStore = create<EliteStore>((set, get) => ({
             if (notifError) console.error('Supabase Error (notifications):', notifError)
             else set({ notifications: notifData || [] })
 
+            // Activer les abonnements Realtime pour les leads et notifications
+            get().subscribeToLeads()
+            get().subscribeToNotifications()
+
         } catch (error: unknown) {
             console.error('Error fetching leads:', error)
             const err = error as { message?: string }
