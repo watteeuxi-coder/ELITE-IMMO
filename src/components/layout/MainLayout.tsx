@@ -6,8 +6,16 @@ import { Sidebar } from './Sidebar'
 import { Navbar } from './Navbar'
 import { cn } from '../../lib/utils'
 import { LanguageSelector } from './LanguageSelector'
+import { useStore } from '../../store/useStore'
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
+    const { subscribeToLeads, subscribeToNotifications } = useStore()
+
+    React.useEffect(() => {
+        subscribeToLeads()
+        subscribeToNotifications()
+    }, [subscribeToLeads, subscribeToNotifications])
+
     const pathname = usePathname()
     const isStandalone = pathname === '/candidature'
 

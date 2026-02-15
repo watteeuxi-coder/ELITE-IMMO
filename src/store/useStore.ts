@@ -74,6 +74,7 @@ interface EliteStore {
     addNotification: (notification: Omit<EliteNotification, 'id' | 'created_at' | 'is_read'>) => Promise<void>;
     markAllNotificationsAsRead: () => Promise<void>;
     subscribeToNotifications: () => void;
+    subscribeToLeads: () => void;
 
     // User Profile
     userProfile: UserProfile;
@@ -190,6 +191,11 @@ export const useStore = create<EliteStore>((set, get) => ({
                 throw error
             }
 
+            // The fetchLeads in subscribeToLeads will handle updating the store,
+            // but if not subscribed or for immediate feedback, we can add it.
+            // For robustness with real-time, it's often better to let the subscription handle it
+            // to avoid race conditions or duplicates if the subscription also triggers a fetch.
+            // For now, we'll keep the direct update for immediate UI feedback.
             set((state) => ({ leads: [lead, ...state.leads] }))
         } catch (error) {
             console.error('Error adding lead:', error)
@@ -438,14 +444,23 @@ export const useStore = create<EliteStore>((set, get) => ({
     },
 
     subscribeToNotifications: () => {
-        supabase
-            .channel('realtime_notifications')
-            .on('postgres_changes', {
-                event: '*',
-                schema: 'public',
-                table: 'notifications'
-            }, () => {
+        const channel = supabase
+            .channel('notifications_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
                 get().fetchNotifications()
+            })
+            .subscribe()
+    },
+
+    subscribeToLeads: () => {
+        // Supprimer les anciens canaux si nécessaire (facultatif mais propre)
+        supabase.removeChannel(supabase.channel('leads_changes'))
+
+        const channel = supabase
+            .channel('leads_changes')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
+                console.log('Realtime discovery:', payload.eventType)
+                get().fetchLeads() // Plus simple et fiable que de patcher manuellement le tableau
             })
             .subscribe()
     },
