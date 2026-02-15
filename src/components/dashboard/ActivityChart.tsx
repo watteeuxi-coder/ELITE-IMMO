@@ -88,6 +88,15 @@ export function ActivityChart() {
                             return null;
                         }}
                     />
+                    <Bar dataKey="sales" radius={[10, 10, 10, 10]} barSize={20}>
+                        {chartData.map((entry: any, index: number) => (
+                            <Cell
+                                key={`cell-${index}`}
+                                fill={entry.sales > 0 ? '#7084FF' : '#7084FF20'}
+                                className="transition-all duration-300"
+                            />
+                        ))}
+                    </Bar>
                     <Line
                         type="monotone"
                         dataKey="target"
