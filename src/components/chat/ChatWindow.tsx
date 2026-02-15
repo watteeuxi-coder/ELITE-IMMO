@@ -78,7 +78,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         nextStep = 'name'
                     } else {
                         leadUpdates.name = userInput
-                        aiResponse = t('chat_name_nice').replace('{name}', userInput)
+                        aiResponse = `✅ ${t('chat_name_nice').replace('{name}', userInput)}`
                         nextStep = 'income'
                     }
                     break
@@ -86,11 +86,11 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 case 'income':
                     const income = parseInt(userInput.replace(/[^\d]/g, ''))
                     if (isNaN(income) || income < 100) {
-                        aiResponse = t('chat_income_error')
+                        aiResponse = t('chat_income_error') + " 💡 Exemple : 2500"
                         nextStep = 'income'
                     } else {
                         leadUpdates.income = income
-                        aiResponse = t('chat_income_nice').replace('{income}', income.toString())
+                        aiResponse = `✅ ${t('chat_income_nice').replace('{income}', income.toString())}`
                         nextStep = 'contract'
                     }
                     break
@@ -115,7 +115,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         nextStep = 'contract'
                     } else {
                         leadUpdates.contractType = contract as Lead['contractType']
-                        aiResponse = t('chat_contract_ask')
+                        aiResponse = `✅ ${contract}, parfait ! ${t('chat_contract_ask')}`
                         nextStep = 'guarantor'
                     }
                     break
@@ -172,11 +172,12 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 case 'email':
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
                     if (!emailRegex.test(userInput.trim())) {
-                        aiResponse = t('chat_email_error')
+                        aiResponse = t('chat_email_error') + " 💡 Format : exemple@email.com"
                         nextStep = 'email'
                     } else {
                         leadUpdates.email = userInput.trim()
-                        aiResponse = t('chat_phone_ask')
+                        aiResponse = `✅ ${t('chat_phone_ask')}`
+
                         nextStep = 'phone'
                     }
                     break
@@ -184,7 +185,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 case 'phone':
                     const phoneRegex = /^[\d\s+\-.]{8,}$/
                     if (!phoneRegex.test(userInput.trim())) {
-                        aiResponse = t('chat_phone_error')
+                        aiResponse = t('chat_phone_error') + " 💡 Format : 06 12 34 56 78"
                         nextStep = 'phone'
                     } else {
                         leadUpdates.phone = userInput.trim()
