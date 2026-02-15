@@ -129,7 +129,31 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         aiResponse = t('chat_date_error')
                         nextStep = 'entry_date'
                     } else {
-                        leadUpdates.entryDate = userInput
+                        // Parser de date : convertit DD/MM ou DD/MM/YYYY en YYYY-MM-DD
+                        const parseDate = (input: string): string => {
+                            const today = new Date()
+                            const currentYear = today.getFullYear()
+
+                            // Format DD/MM ou DD/MM/YYYY
+                            const ddmmRegex = /^(\d{1,2})\/(\d{1,2})(\/(\d{4}))?$/
+                            const match = input.match(ddmmRegex)
+
+                            if (match) {
+                                const day = match[1].padStart(2, '0')
+                                const month = match[2].padStart(2, '0')
+                                const year = match[4] || currentYear.toString()
+                                return `${year}-${month}-${day}`
+                            }
+
+                            // Déjà au format ISO (YYYY-MM-DD)
+                            if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
+                                return input
+                            }
+
+                            return input // Fallback
+                        }
+
+                        leadUpdates.entryDate = parseDate(userInput)
                         aiResponse = t('chat_email_ask')
                         nextStep = 'email'
                     }
