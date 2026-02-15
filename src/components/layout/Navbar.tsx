@@ -32,6 +32,20 @@ export function Navbar() {
         fetchNotifications()
     }, [fetchNotifications])
 
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement
+            if (!target.closest('.search-container')) {
+                setShowSuggestions(false)
+            }
+        }
+        if (showSuggestions) {
+            document.addEventListener('click', handleClickOutside)
+            return () => document.removeEventListener('click', handleClickOutside)
+        }
+    }, [showSuggestions])
+
     const handleQuickAddLead = () => {
         const newLead = {
             id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11),
@@ -67,7 +81,7 @@ export function Navbar() {
                     </div>
                 </div>
 
-                <div className="relative flex-1 max-w-md hidden sm:block">
+                <div className="relative flex-1 max-w-md hidden sm:block search-container">
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
@@ -78,8 +92,9 @@ export function Navbar() {
                                 setShowSuggestions(true)
                             }}
                             onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                             placeholder={t('nav_search')}
-                            className="w-full pl-12 pr-4 py-3 bg-white border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#7084FF]/20 focus:border-[#7084FF] transition-all text-sm shadow-sm"
+                            className="w-full pl-12 pr-4 py-3 bg-white dark:bg-background border border-border rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#7084FF]/20 focus:border-[#7084FF] transition-all text-sm shadow-sm"
                         />
 
                         {/* Search Suggestions Autocomplete */}
