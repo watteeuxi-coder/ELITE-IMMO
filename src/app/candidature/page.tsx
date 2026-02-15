@@ -56,12 +56,12 @@ export default function CandidaturePage() {
             }
 
             if (hasCreatedLead.current) return;
+            hasCreatedLead.current = true; // Verrou immédiat
 
             const newLeadId = generateUUID();
 
             // Protection supplémentaire : ne pas créer si l'ID est déjà dans le store
             if (storeLeads.some(l => l.id === newLeadId)) {
-                hasCreatedLead.current = true;
                 return;
             }
 
@@ -73,11 +73,12 @@ export default function CandidaturePage() {
                 chatHistory: []
             } as any
 
+            // Optionnel : Sauvegarder dans localStorage AVANT l'appel async pour parer aux rechargements ultra-rapides
+            localStorage.setItem('elite_current_lead_id', newLeadId);
+
             await addLead(newLead);
             setActiveLead(newLeadId);
             setCurrentLeadId(newLeadId);
-            localStorage.setItem('elite_current_lead_id', newLeadId);
-            hasCreatedLead.current = true;
         }
 
         initialize();
