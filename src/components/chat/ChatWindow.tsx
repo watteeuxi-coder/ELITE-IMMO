@@ -17,52 +17,62 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat } = useStore()
     const scrollRef = useRef<HTMLDivElement>(null)
 
-    // Recherche résiliente du lead
-    const activeLead = React.useMemo(() => {
-        if (leadId) {
-            return leads.find((l: Lead) => l.id === leadId) || {
-                id: leadId,
-                name: '',
-                status: 'new' as const,
-                aiScore: 0,
-                chatHistory: []
-            } as Lead
-        }
-        if (storeActiveLead) return leads.find((l: Lead) => l.id === storeActiveLead)
-        return leads[0]
-    }, [leadId, leads, storeActiveLead])
+    // localHistory pour l'affichage immédiat (optimistic)
+    const [localHistory, setLocalHistory] = useState<ChatMessage[]>([])
+
+    // Recherche du lead dans le store
+    const storeLead = leadId ? leads.find((l: Lead) => l.id === leadId) : (storeActiveLead ? leads.find((l: Lead) => l.id === storeActiveLead) : leads[0])
+
+    // L'historique affiché est la fusion du store et de l'historique local (pour les nouveaux messages)
+    const displayedHistory = React.useMemo(() => {
+        if (!storeLead) return localHistory;
+
+        // On fusionne en évitant les doublons si possible, ou on fait simple : 
+        // Si le store est vide, on prend le local. Sinon on prend le store.
+        if (!storeLead.chatHistory || storeLead.chatHistory.length === 0) return localHistory;
+        return storeLead.chatHistory;
+    }, [storeLead?.chatHistory, localHistory])
 
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight
         }
-    }, [activeLead?.chatHistory])
+    }, [displayedHistory])
 
     // Initialisation immédiate du message de bienvenue
     useEffect(() => {
-        if (activeLead && (!activeLead.chatHistory || activeLead.chatHistory.length === 0)) {
+        // Condition : si on n'a pas encore de messages du tout
+        if (displayedHistory.length === 0 && (storeLead || leadId)) {
             const initialMsg = {
                 role: 'ai' as const,
                 message: t('chat_welcome')
             }
-            syncChat(activeLead.id, initialMsg)
+            // 1. Affichage immédiat local
+            setLocalHistory([initialMsg])
+
+            // 2. Sync en arrière-plan
+            const targetId = storeLead?.id || leadId
+            if (targetId) {
+                syncChat(targetId, initialMsg)
+            }
+
             setStep('name')
         }
-    }, [activeLead?.id, syncChat, t])
+    }, [storeLead?.id, leadId, displayedHistory.length, syncChat, t])
 
-    // Reprise du flux
+    // Reprise du flux automatique basée sur les données du lead
     useEffect(() => {
-        if (activeLead && activeLead.chatHistory && activeLead.chatHistory.length > 0) {
-            if (activeLead.phone) setStep('complete')
-            else if (activeLead.email) setStep('phone')
-            else if (activeLead.entryDate) setStep('email')
-            else if (activeLead.hasGuarantor !== undefined) setStep('entry_date')
-            else if (activeLead.contractType) setStep('guarantor')
-            else if (activeLead.income !== undefined && activeLead.income > 0) setStep('contract')
-            else if (activeLead.name && activeLead.name !== 'Nouveau Prospect') setStep('income')
-            else setStep('name')
+        if (storeLead) {
+            if (storeLead.phone) setStep('complete')
+            else if (storeLead.email) setStep('phone')
+            else if (storeLead.entryDate) setStep('email')
+            else if (storeLead.hasGuarantor !== undefined) setStep('entry_date')
+            else if (storeLead.contractType) setStep('guarantor')
+            else if (storeLead.income !== undefined && storeLead.income > 0) setStep('contract')
+            else if (storeLead.name && storeLead.name !== 'Nouveau Prospect') setStep('income')
+            else if (displayedHistory.length > 0) setStep('name')
         }
-    }, [activeLead])
+    }, [storeLead])
 
     const runAIPipeline = async (currentStep: ConversationStep, userInput: string, currentLead: Lead) => {
         let aiResponse = ''
@@ -77,21 +87,21 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 nextStep = 'income'
                 break
             case 'income':
-                const incomeValue = parseInt(userInput.replace(/[^\d]/g, ''))
-                if (isNaN(incomeValue) || incomeValue < 100) {
+                const incomeVal = parseInt(userInput.replace(/[^\d]/g, ''))
+                if (isNaN(incomeVal) || incomeVal < 100) {
                     aiResponse = t('chat_income_error')
                     nextStep = 'income'
                 } else {
-                    leadUpdates.income = incomeValue
-                    aiResponse = t('chat_income_nice').replace('{income}', incomeValue.toString())
+                    leadUpdates.income = incomeVal
+                    aiResponse = t('chat_income_nice').replace('{income}', incomeVal.toString())
                     nextStep = 'contract'
                 }
                 break
             case 'contract':
                 let contract: string | null = null
-                if (lowerInput.includes('cdi') || lowerInput.includes('indéfini') || lowerInput.includes('permanent')) contract = 'CDI'
+                if (lowerInput.includes('cdi') || lowerInput.includes('indéfini')) contract = 'CDI'
                 else if (lowerInput.includes('cdd') || lowerInput.includes('déterminé')) contract = 'CDD'
-                else if (lowerInput.includes('indep') || lowerInput.includes('free') || lowerInput.includes('auto')) contract = 'Indépendant'
+                else if (lowerInput.includes('indep') || lowerInput.includes('free')) contract = 'Indépendant'
                 else if (lowerInput.includes('altern') || lowerInput.includes('stage')) contract = 'CDD'
 
                 if (!contract) {
@@ -104,7 +114,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 }
                 break
             case 'guarantor':
-                const isYes = lowerInput.includes('oui') || lowerInput.includes('yes') || lowerInput.includes('visale')
+                const isYes = lowerInput.includes('oui') || lowerInput.includes('yes')
                 const isNo = lowerInput.includes('non') || lowerInput.includes('no')
                 if (!isYes && !isNo) {
                     aiResponse = t('chat_guarantor_error')
@@ -141,32 +151,47 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     }
 
     const handleSend = async () => {
-        if (!input.trim() || !activeLead || isThinking) return
+        const targetLead = storeLead || ({ id: leadId, name: '', chatHistory: displayedHistory } as Lead)
+        if (!input.trim() || !targetLead || isThinking) return
 
         const userMsg = { role: 'user' as const, message: input }
-        await syncChat(activeLead.id, userMsg)
+
+        // Optimistic UI
+        setLocalHistory(prev => [...prev, userMsg])
         setInput('')
         setIsThinking(true)
+
+        // Sync user message
+        await syncChat(targetLead.id, userMsg)
 
         // Réponse ultra rapide
         await new Promise(resolve => setTimeout(resolve, 400))
 
-        const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, input, activeLead)
+        const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, input, targetLead)
         const aiMsg = { role: 'ai' as const, message: aiResponse }
 
-        await updateLead(activeLead.id, leadUpdates)
-        await syncChat(activeLead.id, aiMsg)
+        // Optimistic UI for AI
+        setLocalHistory(prev => [...prev, aiMsg])
+
+        await updateLead(targetLead.id, leadUpdates)
+        await syncChat(targetLead.id, aiMsg)
+
         setIsThinking(false)
         setStep(nextStep)
     }
 
-    if (!activeLead) return <div className="flex-1 flex items-center justify-center italic text-muted-foreground">{t('chat_select_prospect')}</div>
+    // On n'affiche plus le blocage "select prospect" si on a un leadId
+    if (!storeLead && !leadId) return (
+        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground italic">
+            {t('chat_select_prospect')}
+        </div>
+    )
 
     return (
         <div className={cn("flex-1 flex overflow-hidden h-full", standalone ? "flex-col" : "gap-6")}>
             <div className={cn("flex flex-col overflow-hidden", standalone ? "flex-1" : "flex-[1.5] glass rounded-3xl")}>
                 <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4" ref={scrollRef}>
-                    {activeLead.chatHistory.map((msg, idx) => (
+                    {displayedHistory.map((msg, idx) => (
                         <MessageBubble key={idx} role={msg.role} message={msg.message} />
                     ))}
                     {isThinking && (
@@ -193,7 +218,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         <button
                             onClick={handleSend}
                             disabled={!input.trim() || isThinking}
-                            className="p-3 md:p-4 bg-primary text-white rounded-2xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all"
+                            className="p-3 md:p-4 bg-primary text-white rounded-2xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all active:scale-95"
                         >
                             <Send className="w-5 h-5" />
                         </button>
@@ -201,16 +226,16 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 </div>
             </div>
 
-            {!standalone && (
+            {!standalone && storeLead && (
                 <div className="flex-1 glass p-6 rounded-3xl overflow-y-auto hidden lg:block">
                     <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6 opacity-50 flex items-center gap-2">
                         <FileText className="w-4 h-4" /> {t('chat_extracted_data')}
                     </h3>
                     <div className="space-y-4">
-                        <DataCard label={t('chat_full_name')} value={activeLead.name || '—'} icon={<User className="w-4 h-4" />} />
-                        <DataCard label={t('chat_income')} value={activeLead.income ? `${activeLead.income}€/mois` : '—'} icon={<Clock className="w-4 h-4" />} />
-                        <DataCard label={t('chat_contract')} value={activeLead.contractType || '—'} icon={<BadgeCheck className="w-4 h-4" />} />
-                        <DataCard label={t('chat_entry_date')} value={activeLead.entryDate || '—'} icon={<Calendar className="w-4 h-4" />} />
+                        <DataCard label={t('chat_full_name')} value={storeLead.name || '—'} icon={<User className="w-4 h-4" />} />
+                        <DataCard label={t('chat_income')} value={storeLead.income ? `${storeLead.income}€/mois` : '—'} icon={<Clock className="w-4 h-4" />} />
+                        <DataCard label={t('chat_contract')} value={storeLead.contractType || '—'} icon={<BadgeCheck className="w-4 h-4" />} />
+                        <DataCard label={t('chat_entry_date')} value={storeLead.entryDate || '—'} icon={<Calendar className="w-4 h-4" />} />
                     </div>
                 </div>
             )}

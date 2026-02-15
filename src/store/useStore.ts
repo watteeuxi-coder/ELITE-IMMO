@@ -345,11 +345,20 @@ export const useStore = create<EliteStore>((set, get) => ({
                 throw error
             }
 
-            set((state) => ({
-                leads: state.leads.map((l) =>
-                    l.id === leadId ? { ...l, chatHistory: [...l.chatHistory, message] } : l
-                )
-            }))
+            set((state) => {
+                const leadExists = state.leads.some((l) => l.id === leadId);
+                if (!leadExists) {
+                    console.warn(`Lead ${leadId} not found in store during syncChat. Message saved to DB but store update skipped.`);
+                    return state;
+                }
+                return {
+                    leads: state.leads.map((l) =>
+                        l.id === leadId
+                            ? { ...l, chatHistory: [...(l.chatHistory || []), message] }
+                            : l
+                    )
+                };
+            });
         } catch (error) {
             console.error('Error syncing chat:', error)
         }

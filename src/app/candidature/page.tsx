@@ -34,7 +34,8 @@ export default function CandidaturePage() {
                 chatHistory: []
             } as any
 
-            await addLead(newLead);
+            // On ajoute localement et on continue sans attendre Supabase pour la fluidité
+            addLead(newLead);
             setActiveLead(newLeadId);
             setCurrentLeadId(newLeadId);
             localStorage.setItem('elite_current_lead_id', newLeadId);
@@ -67,8 +68,8 @@ export default function CandidaturePage() {
                             <ChatWindow leadId={currentLeadId} standalone={true} />
                         </div>
                     ) : (
-                        <div className="h-full flex items-center justify-center text-muted-foreground italic">
-                            {t('chat_select_prospect')}
+                        <div className="h-full flex items-center justify-center">
+                            <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
                         </div>
                     )}
                 </div>
