@@ -98,17 +98,19 @@ export function Navbar() {
                         />
 
                         {/* Search Suggestions Autocomplete */}
-                        {showSuggestions && suggestions.length > 0 && (
-                            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-border overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {showSuggestions && suggestions.length > 0 && searchTerm.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#1a1a2e] rounded-2xl shadow-2xl border border-border overflow-hidden z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
                                 {suggestions.map((lead) => (
                                     <button
                                         key={lead.id}
-                                        onClick={() => {
+                                        onClick={(e) => {
+                                            e.preventDefault()
+                                            e.stopPropagation()
                                             router.push(`/leads?id=${lead.id}`)
                                             setSearchTerm('')
                                             setShowSuggestions(false)
                                         }}
-                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-colors border-b border-border last:border-0 text-left"
+                                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-colors border-b border-border dark:border-white/10 last:border-0 text-left"
                                     >
                                         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                                             <User className="w-4 h-4 text-primary" />

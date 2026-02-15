@@ -42,7 +42,7 @@ export function UrgentDossiersSection() {
                         const status = lead.aiScore >= 90 ? 'urgent' : lead.aiScore >= 85 ? 'warning' : 'ok';
 
                         return (
-                            <div key={lead.id} className="p-4 bg-white/80 rounded-2xl border border-white/50 hover:bg-white hover:shadow-md transition-all cursor-pointer group">
+                            <div key={lead.id} className="p-4 glass rounded-2xl hover:shadow-md transition-all cursor-pointer group border-white/20">
                                 <div className="flex items-center justify-between mb-3">
                                     <div className="flex items-center gap-2">
                                         <div className={`w-2 h-2 rounded-full ${status === 'urgent' ? 'bg-red-500 animate-pulse' :

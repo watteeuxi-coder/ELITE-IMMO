@@ -99,7 +99,7 @@ export function Sidebar() {
                                     "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative cursor-pointer",
                                     isActive
                                         ? "bg-[#7084FF] text-white shadow-lg shadow-[#7084FF]/20"
-                                        : "text-foreground hover:bg-white/60 hover:shadow-md"
+                                        : "text-foreground hover:bg-white/60 dark:hover:bg-white/10 hover:shadow-md"
                                 )}
                             >
                                 <item.icon className={cn(
@@ -142,7 +142,7 @@ export function Sidebar() {
                             "flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all cursor-pointer",
                             pathname === '/settings'
                                 ? "bg-[#7084FF] text-white"
-                                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                : "text-muted-foreground hover:bg-secondary dark:hover:bg-white/10 hover:text-foreground"
                         )}
                     >
                         <Settings className="w-5 h-5" />

@@ -46,7 +46,7 @@ export function EfficiencyCounter() {
                         </p>
                     </div>
 
-                    <div className="mt-6 p-4 bg-primary/5 rounded-2xl border border-primary/10">
+                    <div className="mt-6 p-4 bg-primary/10 dark:bg-primary/5 rounded-2xl border border-primary/20">
                         <p className="text-xs font-bold text-foreground">
                             {language === 'fr'
                                 ? '💎 Elite-Immo vous a fait gagner'

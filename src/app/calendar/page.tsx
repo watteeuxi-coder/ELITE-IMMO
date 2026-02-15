@@ -162,7 +162,7 @@ export default function CalendarPage() {
                             <AlertCircle className="w-8 h-8 text-red-600" />
                         </div>
                         <div className="flex-1">
-                            <h3 className="text-xl font-black text-red-900 mb-1">{t('calendar_missed_title')}</h3>
+                            <h3 className="text-xl font-black text-red-600 dark:text-red-400 mb-1">{t('calendar_missed_title')}</h3>
                             <p className="text-sm font-medium text-red-700/80 mb-4">{missedVisits.length} {language === 'fr' ? 'rendez-vous manqués à relancer d\'urgence' : 'missed appointments to reschedule urgently'}</p>
                             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                                 {missedVisits.slice(0, 4).map((visit) => (
@@ -224,7 +224,7 @@ export default function CalendarPage() {
             .rdp-caption_label {
               font-size: 1.5rem;
               font-weight: 900;
-              color: #1a1a1a;
+              color: var(--foreground);
               letter-spacing: -0.02em;
             }
             .rdp-head_cell {
