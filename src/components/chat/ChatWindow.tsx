@@ -17,8 +17,20 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat } = useStore()
     const scrollRef = useRef<HTMLDivElement>(null)
 
-    // On cherche le lead. Si on est en standalone (candidature), on prend forcément leadId
-    const activeLead = leadId ? leads.find((l: Lead) => l.id === leadId) : (storeActiveLead ? leads.find((l: Lead) => l.id === storeActiveLead) : leads[0])
+    // Recherche résiliente du lead
+    const activeLead = React.useMemo(() => {
+        if (leadId) {
+            return leads.find((l: Lead) => l.id === leadId) || {
+                id: leadId,
+                name: '',
+                status: 'new' as const,
+                aiScore: 0,
+                chatHistory: []
+            } as Lead
+        }
+        if (storeActiveLead) return leads.find((l: Lead) => l.id === storeActiveLead)
+        return leads[0]
+    }, [leadId, leads, storeActiveLead])
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -26,7 +38,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         }
     }, [activeLead?.chatHistory])
 
-    // Initialisation du greeting
+    // Initialisation immédiate du message de bienvenue
     useEffect(() => {
         if (activeLead && (!activeLead.chatHistory || activeLead.chatHistory.length === 0)) {
             const initialMsg = {
@@ -36,7 +48,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             syncChat(activeLead.id, initialMsg)
             setStep('name')
         }
-    }, [activeLead?.id]) // Dépendance minimale pour éviter les boucles
+    }, [activeLead?.id, syncChat, t])
 
     // Reprise du flux
     useEffect(() => {
@@ -136,8 +148,8 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         setInput('')
         setIsThinking(true)
 
-        // Petit délai pour le réalisme
-        await new Promise(resolve => setTimeout(resolve, 600))
+        // Réponse ultra rapide
+        await new Promise(resolve => setTimeout(resolve, 400))
 
         const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, input, activeLead)
         const aiMsg = { role: 'ai' as const, message: aiResponse }
@@ -148,11 +160,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         setStep(nextStep)
     }
 
-    if (!activeLead) return (
-        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground">
-            {t('chat_select_prospect')}
-        </div>
-    )
+    if (!activeLead) return <div className="flex-1 flex items-center justify-center italic text-muted-foreground">{t('chat_select_prospect')}</div>
 
     return (
         <div className={cn("flex-1 flex overflow-hidden h-full", standalone ? "flex-col" : "gap-6")}>
@@ -185,7 +193,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         <button
                             onClick={handleSend}
                             disabled={!input.trim() || isThinking}
-                            className="p-3 md:p-4 bg-primary text-white rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all shadow-lg shadow-primary/20"
+                            className="p-3 md:p-4 bg-primary text-white rounded-2xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all"
                         >
                             <Send className="w-5 h-5" />
                         </button>
@@ -195,8 +203,8 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
             {!standalone && (
                 <div className="flex-1 glass p-6 rounded-3xl overflow-y-auto hidden lg:block">
-                    <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2 uppercase tracking-widest text-xs opacity-50">
-                        {t('chat_extracted_data')}
+                    <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-6 opacity-50 flex items-center gap-2">
+                        <FileText className="w-4 h-4" /> {t('chat_extracted_data')}
                     </h3>
                     <div className="space-y-4">
                         <DataCard label={t('chat_full_name')} value={activeLead.name || '—'} icon={<User className="w-4 h-4" />} />
