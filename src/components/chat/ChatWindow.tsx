@@ -13,12 +13,11 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const { t, language } = useLanguage()
     const [input, setInput] = useState('')
     const [isThinking, setIsThinking] = useState(false)
-    const [editingIndex, setEditingIndex] = useState<number | null>(null)
     const [step, setStep] = useState<ConversationStep>('greeting')
     const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat } = useStore()
     const scrollRef = useRef<HTMLDivElement>(null)
 
-    // Simply find the lead
+    // On cherche le lead. Si on est en standalone (candidature), on prend forcément leadId
     const activeLead = leadId ? leads.find((l: Lead) => l.id === leadId) : (storeActiveLead ? leads.find((l: Lead) => l.id === storeActiveLead) : leads[0])
 
     useEffect(() => {
@@ -27,7 +26,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         }
     }, [activeLead?.chatHistory])
 
-    // Initialize greeting
+    // Initialisation du greeting
     useEffect(() => {
         if (activeLead && (!activeLead.chatHistory || activeLead.chatHistory.length === 0)) {
             const initialMsg = {
@@ -37,9 +36,9 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             syncChat(activeLead.id, initialMsg)
             setStep('name')
         }
-    }, [activeLead?.id, syncChat, t])
+    }, [activeLead?.id]) // Dépendance minimale pour éviter les boucles
 
-    // Resume flow
+    // Reprise du flux
     useEffect(() => {
         if (activeLead && activeLead.chatHistory && activeLead.chatHistory.length > 0) {
             if (activeLead.phone) setStep('complete')
@@ -66,13 +65,13 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 nextStep = 'income'
                 break
             case 'income':
-                const income = parseInt(userInput.replace(/[^\d]/g, ''))
-                if (isNaN(income) || income < 100) {
+                const incomeValue = parseInt(userInput.replace(/[^\d]/g, ''))
+                if (isNaN(incomeValue) || incomeValue < 100) {
                     aiResponse = t('chat_income_error')
                     nextStep = 'income'
                 } else {
-                    leadUpdates.income = income
-                    aiResponse = t('chat_income_nice').replace('{income}', income.toString())
+                    leadUpdates.income = incomeValue
+                    aiResponse = t('chat_income_nice').replace('{income}', incomeValue.toString())
                     nextStep = 'contract'
                 }
                 break
@@ -105,7 +104,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 }
                 break
             case 'entry_date':
-                leadUpdates.entryDate = userInput // Simple version
+                leadUpdates.entryDate = userInput
                 aiResponse = t('chat_email_ask')
                 nextStep = 'email'
                 break
@@ -116,8 +115,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 break
             case 'phone':
                 leadUpdates.phone = userInput.trim()
-                const tempLead = { ...currentLead, ...leadUpdates }
-                const finalScore = calculateScore(tempLead)
+                const finalScore = calculateScore({ ...currentLead, ...leadUpdates })
                 leadUpdates.aiScore = finalScore
                 leadUpdates.status = finalScore >= 80 ? 'qualified' : 'new'
                 aiResponse = t('chat_complete').replace('{score}', finalScore.toString())
@@ -138,8 +136,8 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         setInput('')
         setIsThinking(true)
 
-        // Faster thinking delay or no delay for fluidity
-        await new Promise(resolve => setTimeout(resolve, 500))
+        // Petit délai pour le réalisme
+        await new Promise(resolve => setTimeout(resolve, 600))
 
         const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, input, activeLead)
         const aiMsg = { role: 'ai' as const, message: aiResponse }
@@ -151,7 +149,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     }
 
     if (!activeLead) return (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground p-8 text-center">
+        <div className="flex-1 flex items-center justify-center p-8 text-center text-muted-foreground">
             {t('chat_select_prospect')}
         </div>
     )
@@ -159,7 +157,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     return (
         <div className={cn("flex-1 flex overflow-hidden h-full", standalone ? "flex-col" : "gap-6")}>
             <div className={cn("flex flex-col overflow-hidden", standalone ? "flex-1" : "flex-[1.5] glass rounded-3xl")}>
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scroll-smooth" ref={scrollRef}>
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4" ref={scrollRef}>
                     {activeLead.chatHistory.map((msg, idx) => (
                         <MessageBubble key={idx} role={msg.role} message={msg.message} />
                     ))}
@@ -175,19 +173,19 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 </div>
 
                 <div className="p-4 md:p-6 border-t border-border/50 bg-white/50 backdrop-blur-sm">
-                    <div className="flex gap-2 relative">
+                    <div className="flex gap-2">
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                             placeholder={t('chat_placeholder')}
-                            className="flex-1 py-3 px-4 md:py-4 md:px-6 bg-white border border-border/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm md:text-base font-medium shadow-sm"
+                            className="flex-1 py-3 px-4 md:py-4 md:px-6 bg-white border border-border/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm md:text-base shadow-sm"
                         />
                         <button
                             onClick={handleSend}
                             disabled={!input.trim() || isThinking}
-                            className="p-3 md:p-4 bg-primary text-white rounded-2xl hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20 active:scale-95"
+                            className="p-3 md:p-4 bg-primary text-white rounded-2xl hover:bg-primary-hover disabled:opacity-50 transition-all shadow-lg shadow-primary/20"
                         >
                             <Send className="w-5 h-5" />
                         </button>
@@ -197,8 +195,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
             {!standalone && (
                 <div className="flex-1 glass p-6 rounded-3xl overflow-y-auto hidden lg:block">
-                    <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-primary" />
+                    <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2 uppercase tracking-widest text-xs opacity-50">
                         {t('chat_extracted_data')}
                     </h3>
                     <div className="space-y-4">
@@ -216,10 +213,8 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 function DataCard({ label, value, icon }: { label: string, value: string, icon: React.ReactNode }) {
     return (
         <div className="p-4 bg-white/50 rounded-2xl border border-border/50 shadow-sm">
-            <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-muted-foreground font-bold flex items-center gap-2 uppercase tracking-wider">{icon} {label}</span>
-            </div>
-            <p className="text-sm font-bold text-foreground">{value}</p>
+            <span className="text-[10px] text-muted-foreground font-black uppercase tracking-widest flex items-center gap-2 mb-1 opacity-70">{icon} {label}</span>
+            <p className="text-sm font-bold text-primary">{value}</p>
         </div>
     )
 }

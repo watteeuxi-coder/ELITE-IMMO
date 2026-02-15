@@ -8,36 +8,41 @@ import { useLanguage } from '../../i18n/LanguageContext'
 
 export default function CandidaturePage() {
     const { t, language } = useLanguage()
-    const { addLead, setActiveLead } = useStore()
+    const { addLead, setActiveLead, leads } = useStore()
     const hasCreatedLead = React.useRef(false)
     const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
 
     useEffect(() => {
         if (hasCreatedLead.current) return;
 
-        const savedLeadId = localStorage.getItem('elite_current_lead_id');
+        const initialize = async () => {
+            const savedLeadId = localStorage.getItem('elite_current_lead_id');
 
-        if (savedLeadId) {
-            setCurrentLeadId(savedLeadId);
-            setActiveLead(savedLeadId);
+            if (savedLeadId) {
+                setCurrentLeadId(savedLeadId);
+                setActiveLead(savedLeadId);
+                hasCreatedLead.current = true;
+                return;
+            }
+
+            const newLeadId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11)
+            const newLead = {
+                id: newLeadId,
+                name: '',
+                status: 'new' as const,
+                aiScore: 0,
+                chatHistory: []
+            } as any
+
+            // On ajoute le lead et on le définit comme actif immédiatement
+            await addLead(newLead);
+            setActiveLead(newLeadId);
+            setCurrentLeadId(newLeadId);
+            localStorage.setItem('elite_current_lead_id', newLeadId);
             hasCreatedLead.current = true;
-            return;
         }
 
-        const newLeadId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11)
-        const newLead = {
-            id: newLeadId,
-            name: '',
-            status: 'new' as const,
-            aiScore: 0,
-            chatHistory: []
-        } as any
-
-        addLead(newLead);
-        setActiveLead(newLeadId);
-        setCurrentLeadId(newLeadId);
-        localStorage.setItem('elite_current_lead_id', newLeadId);
-        hasCreatedLead.current = true;
+        initialize();
     }, [addLead, setActiveLead])
 
     return (
@@ -58,9 +63,14 @@ export default function CandidaturePage() {
 
             <div className="flex-1 flex items-center justify-center px-4 md:px-12 pb-8">
                 <div className="w-full max-w-[1000px] h-full max-h-[800px]">
-                    {currentLeadId && (
+                    {currentLeadId && leads.some(l => l.id === currentLeadId) && (
                         <div className="h-full backdrop-blur-2xl bg-white/80 rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-white/40 overflow-hidden">
                             <ChatWindow leadId={currentLeadId} standalone={true} />
+                        </div>
+                    )}
+                    {(!currentLeadId || !leads.some(l => l.id === currentLeadId)) && (
+                        <div className="h-full flex items-center justify-center text-muted-foreground italic animate-pulse">
+                            Initialisation du chatbot...
                         </div>
                     )}
                 </div>
