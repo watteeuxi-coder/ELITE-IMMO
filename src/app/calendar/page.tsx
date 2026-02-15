@@ -83,9 +83,14 @@ export default function CalendarPage() {
                 const visitDate = new Date(parsedDate)
                 visitDate.setHours(0, 0, 0, 0)
                 const isPast = visitDate < today
+
+                // New logic for visit status
                 const status: 'confirmed' | 'pending' | 'missed' =
-                    lead.status === 'signed' ? 'confirmed' :
-                        isPast ? 'missed' : 'pending'
+                    lead.status === 'signed' ? 'confirmed' :  // Signed = automatically confirmed
+                        isPast ? 'missed' :                        // Past date without being signed = missed
+                            lead.visitConfirmed ? 'confirmed' :        // Manually confirmed by agent
+                                lead.aiScore > 0 ? 'pending' :             // Qualified but not confirmed yet
+                                    'pending'
 
                 return {
                     id: lead.id,
@@ -514,6 +519,26 @@ export default function CalendarPage() {
                                         {t('calendar_view_profile')}
                                         <ExternalLink className="w-5 h-5" />
                                     </button>
+
+                                    {/* Confirm Visit Button */}
+                                    {selectedVisit.status !== 'confirmed' && selectedVisit.status !== 'missed' && (
+                                        <button
+                                            onClick={() => {
+                                                const { confirmVisit } = useStore.getState()
+                                                confirmVisit(selectedVisit.leadId)
+                                            }}
+                                            className="w-full py-5 bg-green-500 text-white rounded-[1.5rem] font-black text-sm shadow-xl shadow-green-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-3"
+                                        >
+                                            {language === 'fr' ? '✓ Confirmer la visite' : '✓ Confirm Visit'}
+                                        </button>
+                                    )}
+
+                                    {selectedVisit.status === 'confirmed' && (
+                                        <div className="w-full py-3 bg-green-100 text-green-700 rounded-[1.5rem] font-bold text-sm flex items-center justify-center gap-2 mt-3">
+                                            <span className="text-lg">✓</span>
+                                            {language === 'fr' ? 'Visite confirmée' : 'Visit Confirmed'}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ) : selectedVisits.length > 0 ? (

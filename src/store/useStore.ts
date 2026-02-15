@@ -30,6 +30,7 @@ export interface Lead {
     assignedAgent?: string;
     documents?: Document[];
     isArchived?: boolean;
+    visitConfirmed?: boolean;
 }
 
 export interface EliteNotification {
@@ -57,6 +58,7 @@ interface EliteStore {
     updateLead: (id: string, updates: Partial<Lead>) => Promise<void>;
     deleteLead: (id: string) => Promise<void>;
     archiveLead: (id: string) => Promise<void>;
+    confirmVisit: (id: string) => Promise<void>;
     setActiveLead: (id: string | null) => void;
     calculateScore: (lead: Partial<Lead>) => number;
     syncChat: (leadId: string, message: ChatMessage) => Promise<void>;
@@ -134,7 +136,8 @@ export const useStore = create<EliteStore>((set, get) => ({
                     agencyNotes: lead.agency_notes,
                     assignedAgent: lead.assigned_agent,
                     documents: lead.documents || [],
-                    isArchived: lead.is_archived || false
+                    isArchived: lead.is_archived || false,
+                    visitConfirmed: lead.visit_confirmed || false
                 } as Lead
             }))
 
@@ -266,6 +269,33 @@ export const useStore = create<EliteStore>((set, get) => ({
             }))
         } catch (error) {
             console.error('Error archiving lead:', error)
+        }
+    },
+
+    confirmVisit: async (id) => {
+        try {
+            const lead = get().leads.find((l) => l.id === id)
+            if (!lead) return
+
+            const newConfirmedState = !lead.visitConfirmed
+
+            const { error } = await supabase
+                .from('leads')
+                .update({ visit_confirmed: newConfirmedState })
+                .eq('id', id)
+
+            if (error) {
+                console.error('Supabase Error (confirmVisit):', error)
+                throw error
+            }
+
+            set((state) => ({
+                leads: state.leads.map((l) =>
+                    l.id === id ? { ...l, visitConfirmed: newConfirmedState } : l
+                )
+            }))
+        } catch (error) {
+            console.error('Error confirming visit:', error)
         }
     },
 
