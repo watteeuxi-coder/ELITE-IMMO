@@ -15,31 +15,11 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const [isThinking, setIsThinking] = useState(false)
     const [editingIndex, setEditingIndex] = useState<number | null>(null)
     const [step, setStep] = useState<ConversationStep>('greeting')
-    const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat, replaceChatHistory } = useStore()
+    const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat } = useStore()
     const scrollRef = useRef<HTMLDivElement>(null)
-    const [fallbackHistory, setFallbackHistory] = useState<ChatMessage[]>([])
 
-    // Use provided leadId, or activeLead from store, or first lead
-    const activeLead = React.useMemo(() => {
-        if (leadId) {
-            const found = leads.find((l: Lead) => l.id === leadId)
-            // Si pas trouvé dans leads, créer un lead temporaire avec l'historique de secours
-            if (!found) {
-                return {
-                    id: leadId,
-                    name: '',
-                    status: 'new' as const,
-                    aiScore: 0,
-                    chatHistory: fallbackHistory
-                } as Lead
-            }
-            return found
-        }
-        if (storeActiveLead) {
-            return leads.find((l: Lead) => l.id === storeActiveLead)
-        }
-        return leads[0]
-    }, [leadId, leads, storeActiveLead, fallbackHistory])
+    // Simply find the lead
+    const activeLead = leadId ? leads.find((l: Lead) => l.id === leadId) : (storeActiveLead ? leads.find((l: Lead) => l.id === storeActiveLead) : leads[0])
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -47,36 +27,29 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         }
     }, [activeLead?.chatHistory])
 
-    // Initialize conversation if empty
+    // Initialize greeting
     useEffect(() => {
         if (activeLead && (!activeLead.chatHistory || activeLead.chatHistory.length === 0)) {
             const initialMsg = {
                 role: 'ai' as const,
                 message: t('chat_welcome')
             }
-            // Si le lead n'est pas dans le store, on utilise le fallback
-            const inStore = leads.some(l => l.id === activeLead.id)
-            if (!inStore) {
-                setFallbackHistory([initialMsg])
-            }
             syncChat(activeLead.id, initialMsg)
-            setTimeout(() => setStep('name'), 0)
+            setStep('name')
         }
-    }, [activeLead?.id, activeLead?.chatHistory?.length, language, syncChat, t, leads])
+    }, [activeLead?.id, syncChat, t])
 
-    // Resume conversation step based on filled fields
+    // Resume flow
     useEffect(() => {
         if (activeLead && activeLead.chatHistory && activeLead.chatHistory.length > 0) {
-            setTimeout(() => {
-                if (activeLead.phone) setStep('complete')
-                else if (activeLead.email) setStep('phone')
-                else if (activeLead.entryDate) setStep('email')
-                else if (activeLead.hasGuarantor !== undefined) setStep('entry_date')
-                else if (activeLead.contractType) setStep('guarantor')
-                else if (activeLead.income !== undefined && activeLead.income > 0) setStep('contract')
-                else if (activeLead.name && activeLead.name !== 'Nouveau Prospect') setStep('income')
-                else setStep('name')
-            }, 0)
+            if (activeLead.phone) setStep('complete')
+            else if (activeLead.email) setStep('phone')
+            else if (activeLead.entryDate) setStep('email')
+            else if (activeLead.hasGuarantor !== undefined) setStep('entry_date')
+            else if (activeLead.contractType) setStep('guarantor')
+            else if (activeLead.income !== undefined && activeLead.income > 0) setStep('contract')
+            else if (activeLead.name && activeLead.name !== 'Nouveau Prospect') setStep('income')
+            else setStep('name')
         }
     }, [activeLead])
 
@@ -86,146 +59,72 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         const leadUpdates: Partial<Lead> = {}
         const lowerInput = userInput.toLowerCase()
 
-        // Robustness: Generic "I didn't understand" if input is too short or weird (demo logic)
-        const isWeirdInput = userInput.length < 2 && currentStep !== 'guarantor'
+        switch (currentStep) {
+            case 'name':
+                leadUpdates.name = userInput
+                aiResponse = t('chat_name_nice').replace('{name}', userInput)
+                nextStep = 'income'
+                break
+            case 'income':
+                const income = parseInt(userInput.replace(/[^\d]/g, ''))
+                if (isNaN(income) || income < 100) {
+                    aiResponse = t('chat_income_error')
+                    nextStep = 'income'
+                } else {
+                    leadUpdates.income = income
+                    aiResponse = t('chat_income_nice').replace('{income}', income.toString())
+                    nextStep = 'contract'
+                }
+                break
+            case 'contract':
+                let contract: string | null = null
+                if (lowerInput.includes('cdi') || lowerInput.includes('indéfini') || lowerInput.includes('permanent')) contract = 'CDI'
+                else if (lowerInput.includes('cdd') || lowerInput.includes('déterminé')) contract = 'CDD'
+                else if (lowerInput.includes('indep') || lowerInput.includes('free') || lowerInput.includes('auto')) contract = 'Indépendant'
+                else if (lowerInput.includes('altern') || lowerInput.includes('stage')) contract = 'CDD'
 
-        if (isWeirdInput) {
-            aiResponse = t('chat_generic_error')
-            nextStep = currentStep
-        } else if (currentStep === 'guarantor' && (lowerInput.includes('c\'est quoi') || lowerInput.includes('qu\'est-ce') || lowerInput.includes('comprends pas') || lowerInput.includes('what is') || lowerInput.includes('don\'t understand'))) {
-            aiResponse = t('chat_guarantor_explain')
-            nextStep = 'guarantor'
-        } else {
-            switch (currentStep) {
-                case 'name':
-                    if (lowerInput.includes('non') || lowerInput.includes('rien') || lowerInput.includes('no') || lowerInput.includes('nothing')) {
-                        aiResponse = t('chat_name_demand')
-                        nextStep = 'name'
-                    } else {
-                        leadUpdates.name = userInput
-                        aiResponse = `✅ ${t('chat_name_nice').replace('{name}', userInput)}`
-                        nextStep = 'income'
-                    }
-                    break
-
-                case 'income':
-                    const income = parseInt(userInput.replace(/[^\d]/g, ''))
-                    if (isNaN(income) || income < 100) {
-                        aiResponse = t('chat_income_error') + " 💡 Exemple : 2500"
-                        nextStep = 'income'
-                    } else {
-                        leadUpdates.income = income
-                        aiResponse = `✅ ${t('chat_income_nice').replace('{income}', income.toString())}`
-                        nextStep = 'contract'
-                    }
-                    break
-
-                case 'contract':
-                    // Détection améliorée du type de contrat
-                    let contract: 'CDI' | 'CDD' | 'Indépendant' | null = null
-
-                    if (lowerInput.includes('cdi') || lowerInput.includes('permanent') || lowerInput.includes('indéterminé') || lowerInput.includes('indefini')) {
-                        contract = 'CDI'
-                    } else if (lowerInput.includes('cdd') || lowerInput.includes('fixed') || lowerInput.includes('déterminé') || lowerInput.includes('determine') || lowerInput.includes('contrat court') || lowerInput.includes('temporaire')) {
-                        contract = 'CDD'
-                    } else if (lowerInput.includes('indep') || lowerInput.includes('free') || lowerInput.includes('auto') || lowerInput.includes('entrepreneur') || lowerInput.includes('freelance') || lowerInput.includes('consultant')) {
-                        contract = 'Indépendant'
-                    } else if (lowerInput.includes('altern') || lowerInput.includes('apprentice') || lowerInput.includes('stage') || lowerInput.includes('intern') || lowerInput.includes('étudiant') || lowerInput.includes('student')) {
-                        // On accepte aussi les alternants/stagiaires comme CDD
-                        contract = 'CDD'
-                    }
-
-                    if (!contract) {
-                        aiResponse = t('chat_contract_error')
-                        nextStep = 'contract'
-                    } else {
-                        leadUpdates.contractType = contract as Lead['contractType']
-                        aiResponse = `✅ ${contract}, parfait ! ${t('chat_contract_ask')}`
-                        nextStep = 'guarantor'
-                    }
-                    break
-
-                case 'guarantor':
-                    const isYes = lowerInput.includes('oui') || lowerInput.includes('yes') || lowerInput.includes('visale') || lowerInput.includes('garant') || lowerInput.includes('guarantor')
-                    const isNo = lowerInput.includes('non') || lowerInput.includes('pas') || lowerInput.includes('no') || lowerInput.includes('don\'t')
-
-                    if (!isYes && !isNo) {
-                        aiResponse = t('chat_guarantor_error')
-                        nextStep = 'guarantor'
-                    } else {
-                        leadUpdates.hasGuarantor = isYes
-                        aiResponse = t('chat_entry_ask')
-                        nextStep = 'entry_date'
-                    }
-                    break
-
-                case 'entry_date':
-                    if (userInput.length < 3) {
-                        aiResponse = t('chat_date_error')
-                        nextStep = 'entry_date'
-                    } else {
-                        // Parser de date : convertit DD/MM ou DD/MM/YYYY en YYYY-MM-DD
-                        const parseDate = (input: string): string => {
-                            const today = new Date()
-                            const currentYear = today.getFullYear()
-
-                            // Format DD/MM ou DD/MM/YYYY
-                            const ddmmRegex = /^(\d{1,2})\/(\d{1,2})(\/(\d{4}))?$/
-                            const match = input.match(ddmmRegex)
-
-                            if (match) {
-                                const day = match[1].padStart(2, '0')
-                                const month = match[2].padStart(2, '0')
-                                const year = match[4] || currentYear.toString()
-                                return `${year}-${month}-${day}`
-                            }
-
-                            // Déjà au format ISO (YYYY-MM-DD)
-                            if (/^\d{4}-\d{2}-\d{2}$/.test(input)) {
-                                return input
-                            }
-
-                            return input // Fallback
-                        }
-
-                        leadUpdates.entryDate = parseDate(userInput)
-                        aiResponse = t('chat_email_ask')
-                        nextStep = 'email'
-                    }
-                    break
-
-                case 'email':
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                    if (!emailRegex.test(userInput.trim())) {
-                        aiResponse = t('chat_email_error') + " 💡 Format : exemple@email.com"
-                        nextStep = 'email'
-                    } else {
-                        leadUpdates.email = userInput.trim()
-                        aiResponse = `✅ ${t('chat_phone_ask')}`
-
-                        nextStep = 'phone'
-                    }
-                    break
-
-                case 'phone':
-                    const phoneRegex = /^[\d\s+\-.]{8,}$/
-                    if (!phoneRegex.test(userInput.trim())) {
-                        aiResponse = t('chat_phone_error') + " 💡 Format : 06 12 34 56 78"
-                        nextStep = 'phone'
-                    } else {
-                        leadUpdates.phone = userInput.trim()
-                        const tempLead = { ...currentLead, ...leadUpdates }
-                        const finalScore = calculateScore(tempLead)
-                        leadUpdates.aiScore = finalScore
-                        leadUpdates.status = finalScore >= 80 ? 'qualified' : 'new'
-                        aiResponse = t('chat_complete').replace('{score}', finalScore.toString()) + " " + (finalScore >= 80 ? t('chat_complete_high') : t('chat_complete_low'))
-                        nextStep = 'complete'
-                    }
-                    break
-
-                default:
-                    aiResponse = t('chat_default')
-            }
+                if (!contract) {
+                    aiResponse = t('chat_contract_error')
+                    nextStep = 'contract'
+                } else {
+                    leadUpdates.contractType = contract
+                    aiResponse = t('chat_contract_ask')
+                    nextStep = 'guarantor'
+                }
+                break
+            case 'guarantor':
+                const isYes = lowerInput.includes('oui') || lowerInput.includes('yes') || lowerInput.includes('visale')
+                const isNo = lowerInput.includes('non') || lowerInput.includes('no')
+                if (!isYes && !isNo) {
+                    aiResponse = t('chat_guarantor_error')
+                    nextStep = 'guarantor'
+                } else {
+                    leadUpdates.hasGuarantor = isYes
+                    aiResponse = t('chat_entry_ask')
+                    nextStep = 'entry_date'
+                }
+                break
+            case 'entry_date':
+                leadUpdates.entryDate = userInput // Simple version
+                aiResponse = t('chat_email_ask')
+                nextStep = 'email'
+                break
+            case 'email':
+                leadUpdates.email = userInput.trim()
+                aiResponse = t('chat_phone_ask')
+                nextStep = 'phone'
+                break
+            case 'phone':
+                leadUpdates.phone = userInput.trim()
+                const tempLead = { ...currentLead, ...leadUpdates }
+                const finalScore = calculateScore(tempLead)
+                leadUpdates.aiScore = finalScore
+                leadUpdates.status = finalScore >= 80 ? 'qualified' : 'new'
+                aiResponse = t('chat_complete').replace('{score}', finalScore.toString())
+                nextStep = 'complete'
+                break
+            default:
+                aiResponse = t('chat_default')
         }
 
         return { aiResponse, nextStep, leadUpdates }
@@ -234,386 +133,93 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const handleSend = async () => {
         if (!input.trim() || !activeLead || isThinking) return
 
-        const userMessage = { role: 'user' as const, message: input }
-        await syncChat(activeLead.id, userMessage)
-
+        const userMsg = { role: 'user' as const, message: input }
+        await syncChat(activeLead.id, userMsg)
         setInput('')
         setIsThinking(true)
 
-        // Simulate thinking delay
-        await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 1000))
+        // Faster thinking delay or no delay for fluidity
+        await new Promise(resolve => setTimeout(resolve, 500))
 
         const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, input, activeLead)
+        const aiMsg = { role: 'ai' as const, message: aiResponse }
 
-        const aiMessage = { role: 'ai' as const, message: aiResponse }
-
-        // Si le lead n'est pas dans le store, mettre à jour le fallback
-        const inStore = leads.some(l => l.id === activeLead.id)
-        if (!inStore) {
-            const userMsg = { role: 'user' as const, message: input }
-            setFallbackHistory(prev => [...prev, userMsg, aiMessage])
-        }
-
-        // Update score and status in Supabase
         await updateLead(activeLead.id, leadUpdates)
-        // Sync AI response
-        await syncChat(activeLead.id, aiMessage)
-
-        if (nextStep === 'complete' && step !== 'complete') {
-            // Only notify for qualified leads (80% or more) as requested
-            if (leadUpdates.aiScore && leadUpdates.aiScore >= 80) {
-                useStore.getState().addNotification({
-                    lead_id: activeLead.id,
-                    type: 'qualified',
-                    message_key: 'nav_notif_qualified'
-                })
-            }
-            // Clear local session since it's complete
-            localStorage.removeItem('elite_current_lead_id');
-        }
-
-        setStep(nextStep)
+        await syncChat(activeLead.id, aiMsg)
         setIsThinking(false)
-    }
-
-    const handleEditMessage = async (index: number, newMessage: string) => {
-        if (!activeLead || isThinking) return
-
-        setIsThinking(true)
-
-        // 1. Determine local history up to the edited message
-        const history = [...activeLead.chatHistory]
-        history[index] = { role: 'user', message: newMessage }
-
-        // 2. Remove all messages after the edited message (to maintain flow)
-        const prunedHistory = history.slice(0, index + 1)
-
-        // 3. Determine the step we are at based on the pruned history
-        // We evaluate fields one by one to find the current step
-        // We'll reset fields in lead but keep the ID
-
-        // Re-calculate the whole lead state based on pruned history (simplified for now)
-        // In a real app we'd re-run the pipeline for each user message in the pruned history
-        // For the demo: we'll just re-run the pipeline FOR THE EDITED MESSAGE
-        // We need to know which step that message belonged to.
-
-        // Let's find the step by looking at how many user messages are before it
-        const userMessagesBefore = prunedHistory.filter(m => m.role === 'user').length - 1
-        const stepsOrder: ConversationStep[] = ['name', 'income', 'contract', 'guarantor', 'entry_date', 'email', 'phone']
-        const currentStepForEdit = stepsOrder[userMessagesBefore] || 'name'
-
-        // Reset the dynamic data from that step onwards
-        const resetUpdates: Partial<Lead> = {}
-        stepsOrder.slice(userMessagesBefore).forEach(s => {
-            if (s === 'name') resetUpdates.name = 'Nouveau Prospect'
-            if (s === 'income') resetUpdates.income = undefined
-            if (s === 'contract') resetUpdates.contractType = undefined
-            if (s === 'guarantor') resetUpdates.hasGuarantor = undefined
-            if (s === 'entry_date') resetUpdates.entryDate = undefined
-            if (s === 'email') resetUpdates.email = undefined
-            if (s === 'phone') resetUpdates.phone = undefined
-        })
-
-        await updateLead(activeLead.id, resetUpdates)
-
-        // Re-run the pipeline for the NEW text
-        const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(currentStepForEdit, newMessage, activeLead)
-
-        const finalHistory = [...prunedHistory, { role: 'ai' as const, message: aiResponse }]
-
-        await replaceChatHistory(activeLead.id, finalHistory)
-        await updateLead(activeLead.id, leadUpdates)
-
         setStep(nextStep)
-        setIsThinking(false)
-        setEditingIndex(null)
-    }
-
-    const handleContractButton = async (contractType: string) => {
-        if (!activeLead || step !== 'contract') return
-
-        const userMessage = { role: 'user' as const, message: contractType }
-        const aiMessage = { role: 'ai' as const, message: t('chat_contract_success') }
-
-        await syncChat(activeLead.id, userMessage)
-        await updateLead(activeLead.id, { contractType })
-        await syncChat(activeLead.id, aiMessage)
-
-        setStep('guarantor')
-    }
-
-    const handleGuarantorButton = async (answer: 'Oui' | 'Non') => {
-        if (!activeLead || step !== 'guarantor') return
-
-        const userMessage = { role: 'user' as const, message: answer }
-        const aiMessage = { role: 'ai' as const, message: t('chat_guarantor_success') }
-
-        await syncChat(activeLead.id, userMessage)
-        await updateLead(activeLead.id, { hasGuarantor: answer === 'Oui' })
-        await syncChat(activeLead.id, aiMessage)
-
-        setStep('entry_date')
     }
 
     if (!activeLead) return (
-        <div className="flex-1 flex items-center justify-center text-muted-foreground">
+        <div className="flex-1 flex items-center justify-center text-muted-foreground p-8 text-center">
             {t('chat_select_prospect')}
         </div>
     )
 
     return (
         <div className={cn("flex-1 flex overflow-hidden h-full", standalone ? "flex-col" : "gap-6")}>
-            {/* Chat Pane */}
             <div className={cn("flex flex-col overflow-hidden", standalone ? "flex-1" : "flex-[1.5] glass rounded-3xl")}>
-                {!standalone && (
-                    <div className="p-6 border-b border-border bg-white/50 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                                {activeLead?.name?.[0] || 'P'}
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-foreground">{activeLead?.name || 'Prospect'}</h3>
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                    {step === 'complete' ? t('chat_status_done') : t('chat_status_ongoing')}
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full">
-                            <Sparkles className="w-3.5 h-3.5 text-primary" />
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{t('chat_ia_assist')}</span>
-                        </div>
-                    </div>
-                )}
-
-                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-2" ref={scrollRef}>
-                    {activeLead?.chatHistory?.map((msg: { role: 'user' | 'ai', message: string }, i: number) => (
-                        <MessageBubble
-                            key={i}
-                            {...msg}
-                            onEdit={msg.role === 'user' ? () => {
-                                setEditingIndex(i)
-                                setInput(msg.message)
-                            } : undefined}
-                        />
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 scroll-smooth" ref={scrollRef}>
+                    {activeLead.chatHistory.map((msg, idx) => (
+                        <MessageBubble key={idx} role={msg.role} message={msg.message} />
                     ))}
                     {isThinking && (
-                        <div className="flex items-start gap-3 animate-pulse">
-                            <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                                <Sparkles className="w-4 h-4 text-[#7084FF]" />
-                            </div>
-                            <div className="bg-secondary/40 px-4 py-3 rounded-2xl text-xs text-muted-foreground flex items-center gap-2">
-                                <Sparkles className="w-3 h-3 text-primary animate-pulse" />
-                                <span>{t('chat_thinking')}</span>
+                        <div className="flex justify-start">
+                            <div className="bg-white border border-border/50 py-3 px-4 rounded-2xl rounded-tl-none shadow-sm flex gap-1">
+                                <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce" />
+                                <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.2s]" />
+                                <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0.4s]" />
                             </div>
                         </div>
                     )}
                 </div>
 
-                <div className="p-6 bg-white/50 border-t border-border">
-                    {step === 'contract' && (
-                        <div className="grid grid-cols-2 gap-2 mb-4">
-                            {['CDI', 'CDD', 'Alternance', 'Intérim', 'Indépendant', 'Stage'].map((type) => (
-                                <button
-                                    key={type}
-                                    onClick={() => handleContractButton(type)}
-                                    className="py-3 px-4 bg-white border-2 border-primary/20 hover:border-primary hover:bg-primary/5 rounded-2xl font-bold text-primary transition-all text-sm"
-                                >
-                                    {type}
-                                </button>
-                            ))}
-                            <button
-                                onClick={() => setStep('contract_other')}
-                                className="col-span-2 py-3 px-4 bg-gradient-to-r from-primary/10 to-[#9D4EDD]/10 border-2 border-primary/30 hover:border-primary hover:bg-primary/5 rounded-2xl font-bold text-primary transition-all text-sm"
-                            >
-                                {t('chat_other')}
-                            </button>
-                        </div>
-                    )}
-
-                    {step === 'contract_other' && (
-                        <div className="mb-4 space-y-2">
-                            <input
-                                type="text"
-                                placeholder={t('chat_other_placeholder')}
-                                className="w-full px-4 py-3 border-2 border-primary/20 bg-white rounded-2xl focus:outline-none focus:border-primary transition-all text-sm"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                                        handleContractButton(e.currentTarget.value.trim())
-                                    }
-                                }}
-                                autoFocus
-                            />
-                            <button
-                                onClick={() => setStep('contract')}
-                                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                                {t('chat_back')}
-                            </button>
-                        </div>
-                    )}
-
-                    {step === 'guarantor' && (
-                        <div className="flex gap-2 mb-4">
-                            <button
-                                onClick={() => handleGuarantorButton('Oui')}
-                                className="flex-1 py-3 px-4 bg-white border-2 border-primary/20 hover:border-primary hover:bg-primary/5 rounded-2xl font-bold text-primary transition-all"
-                            >
-                                {t('chat_yes')}
-                            </button>
-                            <button
-                                onClick={() => handleGuarantorButton('Non')}
-                                className="flex-1 py-3 px-4 bg-white border-2 border-primary/20 hover:border-primary hover:bg-primary/5 rounded-2xl font-bold text-primary transition-all"
-                            >
-                                {t('chat_no')}
-                            </button>
-                        </div>
-                    )}
-
-                    <div className="relative">
+                <div className="p-4 md:p-6 border-t border-border/50 bg-white/50 backdrop-blur-sm">
+                    <div className="flex gap-2 relative">
                         <input
                             type="text"
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    if (editingIndex !== null) {
-                                        handleEditMessage(editingIndex, input)
-                                    } else {
-                                        handleSend()
-                                    }
-                                }
-                                if (e.key === 'Escape' && editingIndex !== null) {
-                                    setEditingIndex(null)
-                                    setInput('')
-                                }
-                            }}
-                            placeholder={editingIndex !== null ? t('chat_edit_placeholder') : t('chat_placeholder')}
-                            className={cn(
-                                "w-full pr-12 pl-4 py-3 md:py-3.5 border-2 bg-white/80 rounded-2xl focus:outline-none transition-all placeholder:text-muted-foreground/50 text-base font-medium",
-                                editingIndex !== null ? "border-primary ring-2 ring-primary/10" : "border-border focus:border-primary"
-                            )}
-                            disabled={isThinking}
-                            style={{ fontSize: '16px' }} // Prevent iOS zoom
+                            onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                            placeholder={t('chat_placeholder')}
+                            className="flex-1 py-3 px-4 md:py-4 md:px-6 bg-white border border-border/50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-sm md:text-base font-medium shadow-sm"
                         />
                         <button
-                            onClick={() => editingIndex !== null ? handleEditMessage(editingIndex, input) : handleSend()}
+                            onClick={handleSend}
                             disabled={!input.trim() || isThinking}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 md:w-10 md:h-10 bg-primary hover:bg-primary/90 disabled:bg-muted disabled:cursor-not-allowed rounded-xl flex items-center justify-center transition-all shadow-lg shadow-primary/20"
+                            className="p-3 md:p-4 bg-primary text-white rounded-2xl hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-primary/20 active:scale-95"
                         >
-                            <Send className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                            <Send className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Data Pane - Hidden in standalone mode */}
-            {!standalone && activeLead && (
-                <div className="flex-1 glass p-6 rounded-3xl overflow-y-auto">
+            {!standalone && (
+                <div className="flex-1 glass p-6 rounded-3xl overflow-y-auto hidden lg:block">
                     <h3 className="text-lg font-bold text-foreground mb-6 flex items-center gap-2">
                         <FileText className="w-5 h-5 text-primary" />
                         {t('chat_extracted_data')}
                     </h3>
                     <div className="space-y-4">
-                        <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-muted-foreground font-medium flex items-center gap-2">
-                                    <User className="w-3.5 h-3.5" />
-                                    {t('chat_full_name')}
-                                </span>
-                                {activeLead.name && activeLead.name !== 'Nouveau Prospect' && (
-                                    <BadgeCheck className="w-4 h-4 text-green-500" />
-                                )}
-                            </div>
-                            <p className="text-sm font-bold text-foreground">
-                                {activeLead.name || '—'}
-                            </p>
-                        </div>
-
-                        <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-muted-foreground font-medium">{t('chat_monthly_income')}</span>
-                                {activeLead.income !== undefined && activeLead.income > 0 && <BadgeCheck className="w-4 h-4 text-green-500" />}
-                            </div>
-                            <p className="text-sm font-bold text-foreground">
-                                {activeLead.income !== undefined && activeLead.income > 0 ? `${activeLead.income}€/mois` : '—'}
-                            </p>
-                        </div>
-
-                        <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-muted-foreground font-medium">{t('chat_contract_type')}</span>
-                                {activeLead.contractType && <BadgeCheck className="w-4 h-4 text-green-500" />}
-                            </div>
-                            <p className="text-sm font-bold text-foreground">
-                                {activeLead.contractType || '—'}
-                            </p>
-                        </div>
-
-                        <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-muted-foreground font-medium">{t('chat_guarantor')}</span>
-                                {activeLead.hasGuarantor !== undefined && <BadgeCheck className="w-4 h-4 text-green-500" />}
-                            </div>
-                            <p className="text-sm font-bold text-foreground">
-                                {activeLead.hasGuarantor === true ? t('chat_yes') : activeLead.hasGuarantor === false ? t('chat_no') : '—'}
-                            </p>
-                        </div>
-
-                        <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-muted-foreground font-medium flex items-center gap-2">
-                                    <Calendar className="w-3.5 h-3.5" />
-                                    {t('chat_entry_date')}
-                                </span>
-                                {activeLead.entryDate && <BadgeCheck className="w-4 h-4 text-green-500" />}
-                            </div>
-                            <p className="text-sm font-bold text-foreground">
-                                {activeLead.entryDate || '—'}
-                            </p>
-                        </div>
-
-                        <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-muted-foreground font-medium">{t('chat_email')}</span>
-                                {activeLead.email && <BadgeCheck className="w-4 h-4 text-green-500" />}
-                            </div>
-                            <p className="text-sm font-bold text-foreground">
-                                {activeLead.email || '—'}
-                            </p>
-                        </div>
-
-                        <div className="p-4 bg-white/50 rounded-2xl border border-border/50">
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-xs text-muted-foreground font-medium">{t('chat_phone')}</span>
-                                {activeLead.phone && <BadgeCheck className="w-4 h-4 text-green-500" />}
-                            </div>
-                            <p className="text-sm font-bold text-foreground">
-                                {activeLead.phone || '—'}
-                            </p>
-                        </div>
-
-                        <div className="mt-6 p-4 bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20">
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs font-bold text-primary uppercase tracking-wider">{t('chat_score_label')}</span>
-                                <Sparkles className="w-4 h-4 text-primary" />
-                            </div>
-                            <div className="mt-3">
-                                <div className="flex items-end gap-2 mb-2">
-                                    <span className="text-3xl font-bold text-primary">{activeLead.aiScore}</span>
-                                    <span className="text-lg font-bold text-primary/60 mb-1">/100</span>
-                                </div>
-                                <div className="w-full h-2 bg-white/50 rounded-full overflow-hidden">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-primary to-[#9D4EDD] rounded-full transition-all duration-1000"
-                                        style={{ width: `${activeLead.aiScore}%` }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        <DataCard label={t('chat_full_name')} value={activeLead.name || '—'} icon={<User className="w-4 h-4" />} />
+                        <DataCard label={t('chat_income')} value={activeLead.income ? `${activeLead.income}€/mois` : '—'} icon={<Clock className="w-4 h-4" />} />
+                        <DataCard label={t('chat_contract')} value={activeLead.contractType || '—'} icon={<BadgeCheck className="w-4 h-4" />} />
+                        <DataCard label={t('chat_entry_date')} value={activeLead.entryDate || '—'} icon={<Calendar className="w-4 h-4" />} />
                     </div>
                 </div>
             )}
+        </div>
+    )
+}
+
+function DataCard({ label, value, icon }: { label: string, value: string, icon: React.ReactNode }) {
+    return (
+        <div className="p-4 bg-white/50 rounded-2xl border border-border/50 shadow-sm">
+            <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-muted-foreground font-bold flex items-center gap-2 uppercase tracking-wider">{icon} {label}</span>
+            </div>
+            <p className="text-sm font-bold text-foreground">{value}</p>
         </div>
     )
 }
