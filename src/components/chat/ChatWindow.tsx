@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Send, Sparkles, User, BadgeCheck, Clock, FileText, Calendar } from 'lucide-react'
 import { MessageBubble } from './MessageBubble'
 import { cn } from '../../lib/utils'
-import { useStore, Lead } from '../../store/useStore'
+import { useStore, Lead, ChatMessage } from '../../store/useStore'
 import { useLanguage } from '../../i18n/LanguageContext'
 
 type ConversationStep = 'greeting' | 'name' | 'income' | 'contract' | 'contract_other' | 'guarantor' | 'entry_date' | 'email' | 'phone' | 'complete'
@@ -17,20 +17,20 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const [step, setStep] = useState<ConversationStep>('greeting')
     const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat, replaceChatHistory } = useStore()
     const scrollRef = useRef<HTMLDivElement>(null)
+    const [fallbackHistory, setFallbackHistory] = useState<ChatMessage[]>([])
 
     // Use provided leadId, or activeLead from store, or first lead
     const activeLead = React.useMemo(() => {
         if (leadId) {
             const found = leads.find((l: Lead) => l.id === leadId)
-            // Si pas trouvé dans leads, créer un lead temporaire
+            // Si pas trouvé dans leads, créer un lead temporaire avec l'historique de secours
             if (!found) {
-                console.warn('Lead not found in store, creating temporary lead')
                 return {
                     id: leadId,
                     name: '',
                     status: 'new' as const,
                     aiScore: 0,
-                    chatHistory: []
+                    chatHistory: fallbackHistory
                 } as Lead
             }
             return found
@@ -39,7 +39,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             return leads.find((l: Lead) => l.id === storeActiveLead)
         }
         return leads[0]
-    }, [leadId, leads, storeActiveLead])
+    }, [leadId, leads, storeActiveLead, fallbackHistory])
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -54,11 +54,15 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 role: 'ai' as const,
                 message: t('chat_welcome')
             }
-            // Si c'est un lead temporaire, on doit s'assurer que le message est envoyé
+            // Si le lead n'est pas dans le store, on utilise le fallback
+            const inStore = leads.some(l => l.id === activeLead.id)
+            if (!inStore) {
+                setFallbackHistory([initialMsg])
+            }
             syncChat(activeLead.id, initialMsg)
             setTimeout(() => setStep('name'), 0)
         }
-    }, [activeLead?.id, activeLead?.chatHistory?.length, language, syncChat, t])
+    }, [activeLead?.id, activeLead?.chatHistory?.length, language, syncChat, t, leads])
 
     // Resume conversation step based on filled fields
     useEffect(() => {
@@ -242,6 +246,13 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, input, activeLead)
 
         const aiMessage = { role: 'ai' as const, message: aiResponse }
+
+        // Si le lead n'est pas dans le store, mettre à jour le fallback
+        const inStore = leads.some(l => l.id === activeLead.id)
+        if (!inStore) {
+            const userMsg = { role: 'user' as const, message: input }
+            setFallbackHistory(prev => [...prev, userMsg, aiMessage])
+        }
 
         // Update score and status in Supabase
         await updateLead(activeLead.id, leadUpdates)
