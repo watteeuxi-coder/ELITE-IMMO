@@ -193,11 +193,16 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         await syncChat(activeLead.id, aiMessage)
 
         if (nextStep === 'complete' && step !== 'complete') {
-            useStore.getState().addNotification({
-                lead_id: activeLead.id,
-                type: 'qualified',
-                message_key: 'nav_notif_qualified'
-            })
+            // Only notify for qualified leads (80% or more) as requested
+            if (leadUpdates.aiScore && leadUpdates.aiScore >= 80) {
+                useStore.getState().addNotification({
+                    lead_id: activeLead.id,
+                    type: 'qualified',
+                    message_key: 'nav_notif_qualified'
+                })
+            }
+            // Clear local session since it's complete
+            localStorage.removeItem('elite_current_lead_id');
         }
 
         setStep(nextStep)

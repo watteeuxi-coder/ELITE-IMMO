@@ -9,10 +9,25 @@ import { useLanguage } from '../../i18n/LanguageContext'
 export default function CandidaturePage() {
     const { t, language } = useLanguage()
     const { addLead, setActiveLead } = useStore()
+    const hasCreatedLead = React.useRef(false)
     const [currentLeadId, setCurrentLeadId] = useState<string | null>(null)
 
     useEffect(() => {
-        // Create a new lead automatically when the page loads
+        // Prevent double execution in Strict Mode or fast refreshes
+        if (hasCreatedLead.current) return;
+
+        // Try to recover existing session from localStorage
+        const savedLeadId = localStorage.getItem('elite_current_lead_id');
+
+        if (savedLeadId) {
+            // Check if lead still exists in store (or just trust the ID for now)
+            setCurrentLeadId(savedLeadId);
+            setActiveLead(savedLeadId);
+            hasCreatedLead.current = true;
+            return;
+        }
+
+        // Create a new lead only if no existing session
         if (!currentLeadId) {
             const newLeadId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 11)
             const newLead = {
@@ -22,11 +37,16 @@ export default function CandidaturePage() {
                 aiScore: 0,
                 chatHistory: []
             } as any
-            addLead(newLead)
-            setActiveLead(newLeadId)
-            setCurrentLeadId(newLeadId)
+
+            addLead(newLead);
+            setActiveLead(newLeadId);
+            setCurrentLeadId(newLeadId);
+
+            // Save to local storage for persistence
+            localStorage.setItem('elite_current_lead_id', newLeadId);
+            hasCreatedLead.current = true;
         }
-    }, [currentLeadId, addLead, setActiveLead])
+    }, [addLead, setActiveLead])
 
     return (
         <div className="min-h-screen w-full bg-gradient-to-br from-[#E0E7FF] via-white to-[#F8FAFC] flex flex-col relative">

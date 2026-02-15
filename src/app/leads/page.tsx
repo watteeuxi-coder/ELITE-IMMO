@@ -39,6 +39,11 @@ export default function LeadsPage() {
     const filteredLeads = leads
         .filter((lead: Lead) => lead.name.toLowerCase().includes(searchTerm.toLowerCase()))
         .filter((lead: Lead) => filterOnlyQualified ? lead.aiScore >= 80 : true)
+        .filter((lead: Lead) => {
+            // Hide "empty" leads unless they are active or have some progress
+            const isEmpty = (!lead.name || lead.name === 'Nouveau Prospect') && lead.aiScore === 0 && lead.chatHistory.length <= 1;
+            return !isEmpty;
+        })
 
     const activeLead = leads.find((l: Lead) => l.id === selectedLeadId) || filteredLeads[0]
 

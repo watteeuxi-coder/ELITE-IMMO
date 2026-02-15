@@ -188,13 +188,6 @@ export const useStore = create<EliteStore>((set, get) => ({
             }
 
             set((state) => ({ leads: [lead, ...state.leads] }))
-
-            // Add notification for new lead
-            await get().addNotification({
-                lead_id: lead.id,
-                type: 'new_lead',
-                message_key: 'nav_notif_new'
-            })
         } catch (error) {
             console.error('Error adding lead:', error)
         }
