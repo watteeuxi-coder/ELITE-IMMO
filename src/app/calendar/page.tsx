@@ -521,7 +521,7 @@ export default function CalendarPage() {
                                     </button>
 
                                     {/* Confirm Visit Button */}
-                                    {selectedVisit.status !== 'confirmed' && selectedVisit.status !== 'missed' && (
+                                    {selectedVisit.status !== 'confirmed' && selectedVisit.status !== 'missed' && !leads.find(l => l.id === selectedVisit.leadId)?.visitConfirmed && (
                                         <button
                                             onClick={() => {
                                                 const { confirmVisit } = useStore.getState()
@@ -533,10 +533,23 @@ export default function CalendarPage() {
                                         </button>
                                     )}
 
-                                    {selectedVisit.status === 'confirmed' && (
+                                    {/* Cancel Confirmation Button */}
+                                    {leads.find(l => l.id === selectedVisit.leadId)?.visitConfirmed && (
+                                        <button
+                                            onClick={() => {
+                                                const { confirmVisit } = useStore.getState()
+                                                confirmVisit(selectedVisit.leadId)
+                                            }}
+                                            className="w-full py-5 bg-orange-500 text-white rounded-[1.5rem] font-black text-sm shadow-xl shadow-orange-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3 mt-3"
+                                        >
+                                            {language === 'fr' ? '✗ Annuler la confirmation' : '✗ Cancel Confirmation'}
+                                        </button>
+                                    )}
+
+                                    {selectedVisit.status === 'confirmed' && !leads.find(l => l.id === selectedVisit.leadId)?.visitConfirmed && (
                                         <div className="w-full py-3 bg-green-100 text-green-700 rounded-[1.5rem] font-bold text-sm flex items-center justify-center gap-2 mt-3">
                                             <span className="text-lg">✓</span>
-                                            {language === 'fr' ? 'Visite confirmée' : 'Visit Confirmed'}
+                                            {language === 'fr' ? 'Visite confirmée (Assigné)' : 'Visit Confirmed (Assigned)'}
                                         </div>
                                     )}
                                 </div>

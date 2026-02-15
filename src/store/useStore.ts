@@ -272,16 +272,22 @@ export const useStore = create<EliteStore>((set, get) => ({
         }
     },
 
+
     confirmVisit: async (id) => {
         try {
             const lead = get().leads.find((l) => l.id === id)
             if (!lead) return
 
             const newConfirmedState = !lead.visitConfirmed
+            // Automatisation: confirmer → status 'visit', annuler → status 'qualified'
+            const newStatus = newConfirmedState ? 'visit' : 'qualified'
 
             const { error } = await supabase
                 .from('leads')
-                .update({ visit_confirmed: newConfirmedState })
+                .update({
+                    visit_confirmed: newConfirmedState,
+                    status: newStatus
+                })
                 .eq('id', id)
 
             if (error) {
@@ -291,7 +297,7 @@ export const useStore = create<EliteStore>((set, get) => ({
 
             set((state) => ({
                 leads: state.leads.map((l) =>
-                    l.id === id ? { ...l, visitConfirmed: newConfirmedState } : l
+                    l.id === id ? { ...l, visitConfirmed: newConfirmedState, status: newStatus as Lead['status'] } : l
                 )
             }))
         } catch (error) {
