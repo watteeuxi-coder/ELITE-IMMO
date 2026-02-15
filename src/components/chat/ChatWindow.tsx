@@ -19,7 +19,27 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const scrollRef = useRef<HTMLDivElement>(null)
 
     // Use provided leadId, or activeLead from store, or first lead
-    const activeLead = leadId ? leads.find((l: Lead) => l.id === leadId) : (storeActiveLead ? leads.find((l: Lead) => l.id === storeActiveLead) : leads[0])
+    const activeLead = React.useMemo(() => {
+        if (leadId) {
+            const found = leads.find((l: Lead) => l.id === leadId)
+            // Si pas trouvé dans leads, créer un lead temporaire
+            if (!found) {
+                console.warn('Lead not found in store, creating temporary lead')
+                return {
+                    id: leadId,
+                    name: '',
+                    status: 'new' as const,
+                    aiScore: 0,
+                    chatHistory: []
+                } as Lead
+            }
+            return found
+        }
+        if (storeActiveLead) {
+            return leads.find((l: Lead) => l.id === storeActiveLead)
+        }
+        return leads[0]
+    }, [leadId, leads, storeActiveLead])
 
     useEffect(() => {
         if (scrollRef.current) {
