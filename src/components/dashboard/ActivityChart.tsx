@@ -37,7 +37,7 @@ export function ActivityChart() {
         return {
             name,
             sales: count,
-            target: Math.max(2, Math.floor(count * 1.5)) // Dynamic target just for visuals
+            target: 15 // Objectif mensuel de 15 dossiers assignés
         }
     })
 
