@@ -21,7 +21,7 @@ export default function Home() {
 
   const totalProspects = leads.length
   const qualifiedLeads = leads.filter(l => l.aiScore >= 80).length
-  const signedLeads = leads.filter(l => l.status === 'signed').length
+  const assignedLeads = leads.filter(l => l.status === 'assigned').length
   const visitLeads = leads.filter(l => l.entryDate && l.entryDate.trim() !== '').length
 
   const qualifiedPercentage = totalProspects > 0 ? Math.round((qualifiedLeads / totalProspects) * 100) : 0
@@ -72,8 +72,8 @@ export default function Home() {
         </Link>
         <Link href="/kanban" className="block hover:scale-[1.02] transition-transform">
           <StatsCard
-            label={t('dash_stats_sales')}
-            value={signedLeads.toString()}
+            label={t('dash_stats_assigned')}
+            value={assignedLeads.toString()}
             icon={LayoutDashboard}
             color="orange"
             trend=""

@@ -24,11 +24,11 @@ export function ActivityChart() {
         ? ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc']
         : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-    // Group signed leads by month
+    // Group assigned leads by month
     const currentYear = new Date().getFullYear()
     const leadCounts = monthNames.map((name, index) => {
         const count = leads.filter(lead => {
-            if (lead.status !== 'signed') return false
+            if (lead.status !== 'assigned') return false
             if (!lead.entryDate) return false
             const d = new Date(lead.entryDate)
             return d.getFullYear() === currentYear && d.getMonth() === index
@@ -53,7 +53,7 @@ export function ActivityChart() {
                 <div className="flex gap-4">
                     <div className="flex items-center gap-1.5">
                         <div className="w-3 h-3 rounded-full bg-primary" />
-                        <span className="text-xs font-medium text-muted-foreground">{t('dash_chart_legend_sales')}</span>
+                        <span className="text-xs font-medium text-muted-foreground">{t('dash_chart_legend_assigned')}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <div className="w-3 h-3 rounded-full bg-purple-400" />
@@ -79,7 +79,7 @@ export function ActivityChart() {
                             if (active && payload && payload.length) {
                                 return (
                                     <div className="bg-white/95 backdrop-blur-md border border-border p-3 rounded-2xl shadow-xl">
-                                        <p className="text-sm font-bold text-foreground mb-1">{t('dash_chart_legend_sales')}: {payload[0].value}</p>
+                                        <p className="text-sm font-bold text-foreground mb-1">{t('dash_chart_legend_assigned')}: {payload[0].value}</p>
                                         <p className="text-sm font-bold text-purple-500">{t('dash_chart_legend_target')}: {payload[1]?.value}</p>
                                     </div>
                                 );

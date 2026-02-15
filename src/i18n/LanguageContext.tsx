@@ -27,7 +27,7 @@ const translations: Record<Language, Record<string, string>> = {
         // Sidebar
         "side_dashboard": "Tableau de Bord",
         "side_leads": "Prospects",
-        "side_pipeline": "Tunnel de Ventes",
+        "side_pipeline": "Tunnel de Dossiers",
         "side_calendar": "Calendrier",
         "side_settings": "Paramètres",
         "side_reset": "Réinitialiser",
@@ -73,7 +73,7 @@ const translations: Record<Language, Record<string, string>> = {
         "leads_delete_confirm": "Supprimer ce prospect ?",
 
         // Kanban Page
-        "kanban_title": "Pipeline des Ventes",
+        "kanban_title": "Pipeline des Dossiers",
         "kanban_subtitle": "Suivez l'avancement de vos dossiers en temps réel.",
         "kanban_search": "Chercher...",
         "kanban_filters": "Filtres",
@@ -82,7 +82,7 @@ const translations: Record<Language, Record<string, string>> = {
         kanban_stage_qualified: "Qualifié",
         kanban_stage_visit: "Visite",
         kanban_stage_applied: "Dossier",
-        kanban_stage_signed: "Signé",
+        kanban_stage_assigned: "Assigné",
         kanban_empty: "Aucun lead ici",
         kanban_add_alert: "Ajouter un nouveau lead dans la catégorie : {title}",
 
@@ -219,10 +219,10 @@ const translations: Record<Language, Record<string, string>> = {
         "dash_stats_prospects": "Prospects",
         "dash_stats_qualified": "Qualified Dossiers",
         "dash_stats_visits": "Appointments",
-        "dash_stats_sales": "Sales",
-        "dash_chart_title": "Sales Growth",
+        "dash_stats_assigned": "Assigned Files",
+        "dash_chart_title": "Assignment Growth",
         "dash_chart_subtitle": "Monthly sales evolution",
-        "dash_chart_legend_sales": "Sales",
+        "dash_chart_legend_assigned": "Assignments",
         "dash_chart_legend_target": "Target",
         "dash_urgent_title": "Urgent Dossiers",
         "dash_urgent_empty": "No urgent dossiers at the moment.",
@@ -250,7 +250,7 @@ const translations: Record<Language, Record<string, string>> = {
         kanban_stage_qualified: "Qualified",
         kanban_stage_visit: "Visit",
         kanban_stage_applied: "Applied",
-        kanban_stage_signed: "Signed",
+        kanban_stage_assigned: "Assigned",
         kanban_empty: "No leads here",
         kanban_add_alert: "Add a new lead in category: {title}",
 

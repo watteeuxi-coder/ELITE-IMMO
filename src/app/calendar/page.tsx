@@ -86,8 +86,8 @@ export default function CalendarPage() {
 
                 // New logic for visit status
                 const status: 'confirmed' | 'pending' | 'missed' =
-                    lead.status === 'signed' ? 'confirmed' :  // Signed = automatically confirmed
-                        isPast ? 'missed' :                        // Past date without being signed = missed
+                    lead.status === 'assigned' ? 'confirmed' :  // Assigned = automatically confirmed
+                        isPast ? 'missed' :                        // Past date without being assigned = missed
                             lead.visitConfirmed ? 'confirmed' :        // Manually confirmed by agent
                                 lead.aiScore > 0 ? 'pending' :             // Qualified but not confirmed yet
                                     'pending'
@@ -377,27 +377,27 @@ export default function CalendarPage() {
                                                                         setSelectedVisit(hourVisit)
                                                                     }}
                                                                     className={cn(
-                                                                        "w-full h-full p-3 rounded-2xl text-left transition-all hover:scale-[1.05] shadow-lg flex flex-col justify-between overflow-hidden relative",
+                                                                        "w-full h-full p-4 rounded-2xl text-left transition-all hover:scale-[1.03] shadow-xl flex flex-col justify-between overflow-hidden relative border-2",
                                                                         hourVisit.status === 'confirmed'
-                                                                            ? "bg-white text-green-900 border-l-4 border-green-500"
+                                                                            ? "bg-gradient-to-br from-green-50 to-green-100 text-green-900 border-green-500 hover:shadow-green-200"
                                                                             : hourVisit.status === 'missed'
-                                                                                ? "bg-white text-red-900 border-l-4 border-red-500"
-                                                                                : "bg-white text-orange-900 border-l-4 border-orange-500"
+                                                                                ? "bg-gradient-to-br from-red-50 to-red-100 text-red-900 border-red-500 hover:shadow-red-200"
+                                                                                : "bg-gradient-to-br from-orange-50 to-orange-100 text-orange-900 border-orange-500 hover:shadow-orange-200"
                                                                     )}
                                                                 >
                                                                     <div>
-                                                                        <div className="font-extrabold text-xs truncate leading-tight">{hourVisit.leadName}</div>
-                                                                        <div className="text-[9px] font-bold opacity-60 mt-0.5">{hourVisit.time}</div>
+                                                                        <div className="font-extrabold text-sm truncate leading-tight mb-1">{hourVisit.leadName}</div>
+                                                                        <div className="text-xs font-bold opacity-70">{hourVisit.time}</div>
                                                                     </div>
-                                                                    <div className="flex items-center justify-between mt-2">
+                                                                    <div className="flex items-center justify-between mt-3">
                                                                         <div className={cn(
-                                                                            "text-[9px] font-black px-1.5 py-0.5 rounded-lg",
-                                                                            hourVisit.status === 'confirmed' ? "bg-green-100 text-green-600" :
-                                                                                hourVisit.status === 'missed' ? "bg-red-100 text-red-600" : "bg-orange-100 text-orange-600"
+                                                                            "text-xs font-black px-2.5 py-1 rounded-xl shadow-sm",
+                                                                            hourVisit.status === 'confirmed' ? "bg-green-500 text-white" :
+                                                                                hourVisit.status === 'missed' ? "bg-red-500 text-white" : "bg-orange-500 text-white"
                                                                         )}>
                                                                             {hourVisit.aiScore}%
                                                                         </div>
-                                                                        <User className="w-3 h-3 opacity-20" />
+                                                                        <User className="w-4 h-4 opacity-30" />
                                                                     </div>
                                                                 </button>
                                                             ) : (

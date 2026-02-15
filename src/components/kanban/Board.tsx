@@ -27,7 +27,7 @@ export function KanbanBoard() {
         { title: t('kanban_stage_qualified'), status: 'qualified' },
         { title: t('kanban_stage_visit'), status: 'visit' },
         { title: t('kanban_stage_applied'), status: 'applied' },
-        { title: t('kanban_stage_signed'), status: 'signed' },
+        { title: t('kanban_stage_assigned'), status: 'assigned' },
     ]
 
     // Simplified: Toast is now triggered directly from handleDragEnd for reliability
@@ -58,8 +58,8 @@ export function KanbanBoard() {
             const currentLead = leads.find(l => l.id === activeId)
             if (currentLead && currentLead.status !== overId) {
                 updateLead(activeId, { status: overId as Lead['status'] })
-                if (overId === 'signed') {
-                    setToastLead({ ...currentLead, status: 'signed' })
+                if (overId === 'assigned') {
+                    setToastLead({ ...currentLead, status: 'assigned' })
                 }
             }
             return
@@ -70,8 +70,8 @@ export function KanbanBoard() {
         const activeLeadObj = leads.find((l: Lead) => l.id === activeId)
         if (overLead && activeLeadObj && overLead.status !== activeLeadObj.status) {
             updateLead(activeId, { status: overLead.status })
-            if (overLead.status === 'signed') {
-                setToastLead({ ...activeLeadObj, status: 'signed' })
+            if (overLead.status === 'assigned') {
+                setToastLead({ ...activeLeadObj, status: 'assigned' })
             }
         }
     }
@@ -109,7 +109,7 @@ export function KanbanBoard() {
             {toastLead && (
                 <Toast
                     message={language === 'fr'
-                        ? `${toastLead.name} est maintenant en statut Signé !`
+                        ? `${toastLead.name} a été assigné à l'agence !`
                         : `${toastLead.name} is now marked as Signed!`
                     }
                     action={{

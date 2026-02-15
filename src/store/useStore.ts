@@ -24,7 +24,7 @@ export interface Lead {
     email?: string;
     phone?: string;
     aiScore: number;
-    status: 'new' | 'qualified' | 'visit' | 'applied' | 'signed';
+    status: 'new' | 'qualified' | 'visit' | 'applied' | 'assigned';
     chatHistory: ChatMessage[];
     agencyNotes?: string;
     assignedAgent?: string;
