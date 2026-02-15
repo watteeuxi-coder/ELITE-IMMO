@@ -25,9 +25,8 @@ import { Modal } from '../common/Modal'
 export function Sidebar() {
     const { t, language } = useLanguage()
     const pathname = usePathname()
-    const { isSidebarOpen, setSidebarOpen, resetDatabase, userProfile } = useStore()
+    const { isSidebarOpen, setSidebarOpen, userProfile } = useStore()
     const [showToast, setShowToast] = useState(false)
-    const [isResetModalOpen, setIsResetModalOpen] = useState(false)
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
 
     // Reset sidebar on path change (useful for mobile)
@@ -53,14 +52,6 @@ export function Sidebar() {
         }
     }
 
-    const handleReset = () => {
-        setIsResetModalOpen(true)
-    }
-
-    const confirmReset = () => {
-        resetDatabase()
-        setIsResetModalOpen(false)
-    }
 
     return (
         <>
@@ -131,14 +122,6 @@ export function Sidebar() {
                 </nav>
 
                 <div className="pt-6 border-t border-border mt-auto space-y-2">
-                    {/* Reset Database Button - Fixed at bottom */}
-                    <button
-                        onClick={handleReset}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-50 transition-all mb-2"
-                    >
-                        <RefreshCw className="w-5 h-5" />
-                        <span className="font-bold text-sm">{t('side_reset') || 'Réinitialiser'}</span>
-                    </button>
 
                     <Link
                         href="/settings"
@@ -188,32 +171,6 @@ export function Sidebar() {
             </div>
 
             {/* Modal Components - Outside the Sidebar div for global centering */}
-            <Modal
-                isOpen={isResetModalOpen}
-                onClose={() => setIsResetModalOpen(false)}
-                title={t('settings_reset_confirm') || 'Réinitialisation'}
-            >
-                <div className="space-y-6 text-center">
-                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                        <ShieldAlert className="w-8 h-8 text-red-500" />
-                    </div>
-                    <p className="text-muted-foreground">Cette action supprimera tous les prospects et réinitialisera l'application. Cette opération est irréversible.</p>
-                    <div className="flex gap-4">
-                        <button
-                            onClick={() => setIsResetModalOpen(false)}
-                            className="flex-1 py-4 rounded-2xl font-bold bg-secondary text-foreground hover:bg-secondary/70 transition-all"
-                        >
-                            Annuler
-                        </button>
-                        <button
-                            onClick={confirmReset}
-                            className="flex-1 py-4 rounded-2xl font-bold bg-red-500 text-white shadow-lg shadow-red-500/20 hover:scale-[1.02] transition-all"
-                        >
-                            Réinitialiser
-                        </button>
-                    </div>
-                </div>
-            </Modal>
 
             <Modal
                 isOpen={isLogoutModalOpen}

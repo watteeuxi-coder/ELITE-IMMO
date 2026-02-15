@@ -19,10 +19,19 @@ export default function Home() {
     fetchLeads()
   }, [fetchLeads])
 
-  const totalProspects = leads.length
-  const qualifiedLeads = leads.filter(l => l.aiScore >= 80).length
-  const assignedLeads = leads.filter(l => l.status === 'assigned').length
-  const visitLeads = leads.filter(l => (l as any).entryDate && (l as any).entryDate.trim() !== '').length
+  const now = new Date()
+  const fortyEightHoursAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000))
+
+  const activeLeads = leads.filter(l => {
+    if (l.status === 'assigned') return true
+    const createdAt = l.createdAt ? new Date(l.createdAt) : fortyEightHoursAgo
+    return createdAt >= fortyEightHoursAgo
+  })
+
+  const totalProspects = activeLeads.length
+  const qualifiedLeads = activeLeads.filter(l => l.aiScore >= 80).length
+  const assignedLeads = leads.filter(l => l.status === 'assigned').length // On garde le total des assignés pour la stat globale
+  const visitLeads = activeLeads.filter(l => (l as any).entryDate && (l as any).entryDate.trim() !== '').length
 
   const qualifiedPercentage = totalProspects > 0 ? Math.round((qualifiedLeads / totalProspects) * 100) : 0
   const visitPercentage = totalProspects > 0 ? Math.round((visitLeads / totalProspects) * 100) : 0
