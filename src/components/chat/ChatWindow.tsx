@@ -14,7 +14,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
     const [input, setInput] = useState('')
     const [isThinking, setIsThinking] = useState(false)
     const [step, setStep] = useState<ConversationStep>('greeting')
-    const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat } = useStore()
+    const { leads, updateLead, activeLead: storeActiveLead, calculateScore, syncChat, addNotification } = useStore()
     const scrollRef = useRef<HTMLDivElement>(null)
 
     // Historique local pour l'affichage immédiat (optimistic)
@@ -53,10 +53,19 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             }
             setLocalHistory([initialMsg])
             const targetId = storeLead?.id || leadId
-            if (targetId) syncChat(targetId, initialMsg)
+            if (targetId) {
+                syncChat(targetId, initialMsg)
+
+                // Notification nouveau prospect dès le début
+                addNotification({
+                    lead_id: targetId,
+                    type: 'new_lead',
+                    message_key: 'notif_new_lead',
+                })
+            }
             setStep('name')
         }
-    }, [storeLead?.id, leadId, displayedHistory.length, syncChat, t])
+    }, [storeLead?.id, leadId, displayedHistory.length, syncChat, t, addNotification])
 
     // Reprise du flux automatique basée sur les données fusionnées
     useEffect(() => {
@@ -67,7 +76,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             else if (currentLead.hasGuarantor !== undefined) setStep('entry_date')
             else if (currentLead.contractType) setStep('guarantor')
             else if (currentLead.income !== undefined && currentLead.income > 0) setStep('contract')
-            else if (currentLead.name && currentLead.name !== 'Nouveau Prospect') setStep('income')
+            else if (currentLead.name && currentLead.name !== 'Nouveau Prospect' && currentLead.name !== '') setStep('income')
         }
     }, [currentLead])
 
@@ -99,7 +108,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 if (lowerInput.includes('cdi') || lowerInput.includes('indéfini')) contract = 'CDI'
                 else if (lowerInput.includes('cdd') || lowerInput.includes('déterminé')) contract = 'CDD'
                 else if (lowerInput.includes('indep') || lowerInput.includes('free')) contract = 'Indépendant'
-                else if (lowerInput.includes('altern') || lowerInput.includes('stage')) contract = 'CDD'
+                else if (lowerInput.includes('altern') || lowerInput.includes('stage')) contract = 'Alternance'
 
                 if (!contract) {
                     aiResponse = t('chat_contract_error')
@@ -135,8 +144,18 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
             case 'phone':
                 leadUpdates.phone = userInput.trim()
                 const finalScore = calculateScore({ ...targetLead, ...leadUpdates })
+                const isQualified = finalScore >= 80
                 leadUpdates.aiScore = finalScore
-                leadUpdates.status = finalScore >= 80 ? 'qualified' : 'new'
+                leadUpdates.status = isQualified ? 'qualified' : 'new'
+
+                if (isQualified) {
+                    addNotification({
+                        lead_id: targetLead.id,
+                        type: 'qualified',
+                        message_key: 'notif_qualified_lead',
+                    })
+                }
+
                 aiResponse = t('chat_complete').replace('{score}', finalScore.toString())
                 nextStep = 'complete'
                 break
@@ -157,6 +176,8 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         setIsThinking(true)
 
         const targetId = currentLead.id
+        console.log(`Sending message to lead ${targetId}:`, userMsg.message)
+
         await syncChat(targetId, userMsg)
 
         await new Promise(resolve => setTimeout(resolve, 600))
@@ -167,6 +188,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         setLocalHistory(prev => [...prev, aiMsg])
         setLocalLeadData(prev => ({ ...prev, ...leadUpdates }))
 
+        console.log(`Updating lead ${targetId} with pipeline data:`, leadUpdates)
         await updateLead(targetId, leadUpdates)
         await syncChat(targetId, aiMsg)
 
@@ -188,38 +210,6 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         <MessageBubble key={idx} role={msg.role} message={msg.message} />
                     ))}
 
-                    {/* Boutons d'options directement dans le flux du chat */}
-                    {!isThinking && step === 'contract' && (
-                        <div className="flex flex-wrap gap-2 pt-2 pb-2 pl-12 animate-in fade-in slide-in-from-left-4 duration-500">
-                            {['CDI', 'CDD', 'Alternance', 'Indépendant', 'Autre'].map((type) => (
-                                <button
-                                    key={type}
-                                    onClick={() => handleSend(type)}
-                                    className="px-4 py-2 bg-white border-2 border-primary/10 rounded-xl text-xs sm:text-sm font-bold text-primary hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm active:scale-95"
-                                >
-                                    {type}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {!isThinking && step === 'guarantor' && (
-                        <div className="flex gap-2 pt-2 pb-2 pl-12 animate-in fade-in slide-in-from-left-4 duration-500">
-                            <button
-                                onClick={() => handleSend(t('chat_yes'))}
-                                className="px-8 py-2 bg-white border-2 border-green-100 rounded-xl text-xs sm:text-sm font-bold text-green-600 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all shadow-sm active:scale-95"
-                            >
-                                {t('chat_yes')}
-                            </button>
-                            <button
-                                onClick={() => handleSend(t('chat_no'))}
-                                className="px-8 py-2 bg-white border-2 border-red-100 rounded-xl text-xs sm:text-sm font-bold text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shadow-sm active:scale-95"
-                            >
-                                {t('chat_no')}
-                            </button>
-                        </div>
-                    )}
-
                     {isThinking && (
                         <div className="flex justify-start">
                             <div className="bg-white/80 backdrop-blur-md border border-primary/10 py-3 px-5 rounded-2xl rounded-tl-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center gap-3 animate-in fade-in zoom-in-95 duration-300">
@@ -235,6 +225,38 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 </div>
 
                 <div className="p-4 md:p-6 border-t border-border/50 bg-white/50 backdrop-blur-sm relative">
+                    {/* Boutons d'options ANCRÉS (Repro "tout à l'heure") */}
+                    {!isThinking && step === 'contract' && (
+                        <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {['CDI', 'CDD', 'Alternance', 'Indépendant', 'Autre'].map((type) => (
+                                <button
+                                    key={type}
+                                    onClick={() => handleSend(type)}
+                                    className="px-4 py-2 bg-white border-2 border-primary/10 rounded-xl text-xs sm:text-sm font-bold text-primary hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm hover:shadow-md active:scale-95"
+                                >
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {!isThinking && step === 'guarantor' && (
+                        <div className="flex gap-2 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <button
+                                onClick={() => handleSend(t('chat_yes'))}
+                                className="px-8 py-2 bg-white border-2 border-green-100 rounded-xl text-xs sm:text-sm font-bold text-green-600 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all shadow-sm hover:shadow-md active:scale-95"
+                            >
+                                {t('chat_yes')}
+                            </button>
+                            <button
+                                onClick={() => handleSend(t('chat_no'))}
+                                className="px-8 py-2 bg-white border-2 border-red-100 rounded-xl text-xs sm:text-sm font-bold text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shadow-sm hover:shadow-md active:scale-95"
+                            >
+                                {t('chat_no')}
+                            </button>
+                        </div>
+                    )}
+
                     <div className="flex gap-2 relative">
                         <input
                             type="text"

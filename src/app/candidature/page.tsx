@@ -15,36 +15,55 @@ export default function CandidaturePage() {
 
     useEffect(() => {
         const initialize = async () => {
-            // 1. Toujours récupérer les leads existants d'abord pour peupler le dashboard/calendrier
+            // 1. Toujours récupérer les leads existants d'abord pour peupler le store
             if (!hasInitialFetch.current) {
-                await fetchLeads()
-                hasInitialFetch.current = true
+                try {
+                    await fetchLeads()
+                    hasInitialFetch.current = true
+                } catch (e) {
+                    console.error("Initial fetch failed", e)
+                }
             }
-
-            const savedLeadId = localStorage.getItem('elite_current_lead_id');
-            if (savedLeadId) {
-                setCurrentLeadId(savedLeadId);
-                setActiveLead(savedLeadId);
-                return;
-            }
-
-            if (hasCreatedLead.current) return;
 
             const generateUUID = () => {
                 if (typeof crypto !== 'undefined' && crypto.randomUUID) {
                     return crypto.randomUUID();
                 }
-                // Fallback UUID v4 format
                 return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
                     var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
                     return v.toString(16);
                 });
             };
 
+            const validateUUID = (id: string) => {
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+                return uuidRegex.test(id);
+            };
+
+            const savedLeadId = localStorage.getItem('elite_current_lead_id');
+            const storeLeads = useStore.getState().leads;
+
+            // Si on a un ID sauvegardé, on vérifie sa validité ET son existence en base
+            if (savedLeadId && validateUUID(savedLeadId)) {
+                const existingLead = storeLeads.find(l => l.id === savedLeadId);
+                if (existingLead) {
+                    setCurrentLeadId(savedLeadId);
+                    setActiveLead(savedLeadId);
+                    return;
+                } else {
+                    console.warn("Lead ID in localStorage not found in Supabase. Generating new one.");
+                }
+            }
+
+            if (hasCreatedLead.current) return;
+
             const newLeadId = generateUUID();
             const newLead = {
                 id: newLeadId,
                 name: '',
+                income: 0,
+                contractType: 'CDI',
+                hasGuarantor: false,
                 status: 'new' as const,
                 aiScore: 0,
                 chatHistory: []

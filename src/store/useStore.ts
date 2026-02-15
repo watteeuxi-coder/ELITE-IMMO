@@ -181,38 +181,35 @@ export const useStore = create<EliteStore>((set, get) => ({
 
     addLead: async (lead) => {
         try {
-            const { error } = await supabase.from('leads').insert([{
-                id: lead.id,
-                name: lead.name,
-                income: lead.income,
-                contract_type: lead.contractType,
-                has_guarantor: lead.hasGuarantor,
-                entry_date: lead.entryDate,
-                visit_time: lead.visitTime,
-                email: lead.email,
-                phone: lead.phone,
-                ai_score: lead.aiScore,
-                status: lead.status,
-                agency_notes: lead.agencyNotes,
-                assigned_agent: lead.assignedAgent,
-                documents: lead.documents || [],
-                is_archived: lead.isArchived || false
-            }])
+            // Builder pattern pour addLead aussi, pour éviter tout 'undefined'
+            const insertData: any = { id: lead.id }
+            insertData.name = lead.name || 'Nouveau Prospect'
+            insertData.status = lead.status || 'new'
+            insertData.ai_score = lead.aiScore || 0
+            insertData.income = lead.income || 0
+            insertData.contract_type = lead.contractType || null
+            insertData.has_guarantor = lead.hasGuarantor !== undefined ? lead.hasGuarantor : false
+            insertData.entry_date = lead.entryDate || null
+            insertData.visit_time = lead.visitTime || '10:00'
+            insertData.email = lead.email || null
+            insertData.phone = lead.phone || null
+            insertData.agency_notes = lead.agencyNotes || null
+            insertData.assigned_agent = lead.assignedAgent || null
+            insertData.documents = lead.documents || []
+            insertData.is_archived = lead.isArchived || false
+            insertData.visit_confirmed = lead.visitConfirmed || false
+
+            const { error } = await supabase.from('leads').insert([insertData])
 
             if (error) {
                 console.error('Supabase Error (add):', error)
-                alert(`Erreur Supabase lors de l'ajout: ${error.message}`)
                 throw error
             }
 
-            // The fetchLeads in subscribeToLeads will handle updating the store,
-            // but if not subscribed or for immediate feedback, we can add it.
-            // For robustness with real-time, it's often better to let the subscription handle it
-            // to avoid race conditions or duplicates if the subscription also triggers a fetch.
-            // For now, we'll keep the direct update for immediate UI feedback.
             set((state) => ({ leads: [lead, ...state.leads] }))
         } catch (error) {
             console.error('Error adding lead:', error)
+            alert(`Erreur critique Supabase (addLead). Vérifiez votre connexion.`)
         }
     },
 
@@ -233,6 +230,9 @@ export const useStore = create<EliteStore>((set, get) => ({
             if (updates.assignedAgent !== undefined) supabaseUpdates.assigned_agent = updates.assignedAgent
             if (updates.documents !== undefined) supabaseUpdates.documents = updates.documents
             if (updates.isArchived !== undefined) supabaseUpdates.is_archived = updates.isArchived
+            if (updates.visitConfirmed !== undefined) supabaseUpdates.visit_confirmed = updates.visitConfirmed
+
+            console.log(`Updating lead ${id} with:`, supabaseUpdates)
 
             if (Object.keys(supabaseUpdates).length > 0) {
                 const { error } = await supabase
@@ -252,6 +252,7 @@ export const useStore = create<EliteStore>((set, get) => ({
             }))
         } catch (error) {
             console.error('Error updating lead:', error)
+            alert(`Erreur de mise à jour Supabase: ${id}. Vérifiez la console.`)
         }
     },
 
