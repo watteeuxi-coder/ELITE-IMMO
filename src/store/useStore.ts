@@ -111,35 +111,49 @@ export const useStore = create<EliteStore>((set, get) => ({
                 throw leadsError
             }
 
-            // Fetch chat history for each lead
+            // Fetch chat history for each lead with individual error handling
             const leadsWithChat = await Promise.all((leadsData || []).map(async (lead) => {
-                const { data: messages, error: msgError } = await supabase
-                    .from('chat_messages')
-                    .select('role, message')
-                    .eq('lead_id', lead.id)
-                    .order('created_at', { ascending: true })
+                try {
+                    const { data: messages, error: msgError } = await supabase
+                        .from('chat_messages')
+                        .select('role, message')
+                        .eq('lead_id', lead.id)
+                        .order('created_at', { ascending: true })
 
-                if (msgError) console.error(`Error fetching chat for lead ${lead.id}:`, msgError)
+                    if (msgError) {
+                        console.error(`Error fetching chat for lead ${lead.id}:`, msgError)
+                    }
 
-                return {
-                    id: lead.id,
-                    name: lead.name,
-                    income: lead.income,
-                    contractType: lead.contract_type,
-                    hasGuarantor: lead.has_guarantor,
-                    entryDate: lead.entry_date,
-                    visitTime: lead.visit_time,
-                    email: lead.email,
-                    phone: lead.phone,
-                    aiScore: lead.ai_score,
-                    status: lead.status,
-                    chatHistory: messages || [],
-                    agencyNotes: lead.agency_notes,
-                    assignedAgent: lead.assigned_agent,
-                    documents: lead.documents || [],
-                    isArchived: lead.is_archived || false,
-                    visitConfirmed: lead.visit_confirmed || false
-                } as Lead
+                    return {
+                        id: lead.id,
+                        name: lead.name,
+                        income: lead.income,
+                        contractType: lead.contract_type,
+                        hasGuarantor: lead.has_guarantor,
+                        entryDate: lead.entry_date,
+                        visitTime: lead.visit_time,
+                        email: lead.email,
+                        phone: lead.phone,
+                        aiScore: lead.ai_score,
+                        status: lead.status,
+                        chatHistory: messages || [],
+                        agencyNotes: lead.agency_notes,
+                        assignedAgent: lead.assigned_agent,
+                        documents: lead.documents || [],
+                        isArchived: lead.is_archived || false,
+                        visitConfirmed: lead.visit_confirmed || false
+                    } as Lead
+                } catch (e) {
+                    console.error(`Catastrophic error for lead ${lead.id}:`, e)
+                    // Return lead without chat to not block everything
+                    return {
+                        id: lead.id,
+                        name: lead.name,
+                        aiScore: lead.ai_score,
+                        status: lead.status,
+                        chatHistory: []
+                    } as any
+                }
             }))
 
             set({ leads: leadsWithChat })
@@ -453,14 +467,18 @@ export const useStore = create<EliteStore>((set, get) => ({
     },
 
     subscribeToLeads: () => {
-        // Supprimer les anciens canaux si nécessaire (facultatif mais propre)
-        supabase.removeChannel(supabase.channel('leads_changes'))
+        // Nettoyage des canaux existants portant ce nom
+        const channels = supabase.getChannels()
+        channels.forEach(ch => {
+            // @ts-ignore - access internal topic/name if needed or just remove all
+            if (ch.topic === 'realtime:public:leads') supabase.removeChannel(ch)
+        })
 
         const channel = supabase
             .channel('leads_changes')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, (payload) => {
-                console.log('Realtime discovery:', payload.eventType)
-                get().fetchLeads() // Plus simple et fiable que de patcher manuellement le tableau
+                console.log('Realtime discovery (leads):', payload.eventType)
+                get().fetchLeads()
             })
             .subscribe()
     },

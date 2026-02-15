@@ -42,7 +42,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight
         }
-    }, [displayedHistory])
+    }, [displayedHistory, isThinking, step])
 
     // Initialisation immédiate du message de bienvenue
     useEffect(() => {
@@ -147,12 +147,12 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
         return { aiResponse, nextStep, leadUpdates }
     }
 
-    const handleSend = async () => {
-        if (!input.trim() || !currentLead || isThinking) return
+    const handleSend = async (forcedValue?: string) => {
+        const valToUse = forcedValue || input;
+        if (!valToUse.trim() || !currentLead || isThinking) return
 
-        const userMsg = { role: 'user' as const, message: input }
+        const userMsg = { role: 'user' as const, message: valToUse }
         setLocalHistory(prev => [...prev, userMsg])
-        const sentInput = input;
         setInput('')
         setIsThinking(true)
 
@@ -161,7 +161,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
 
         await new Promise(resolve => setTimeout(resolve, 600))
 
-        const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, sentInput, currentLead)
+        const { aiResponse, nextStep, leadUpdates } = await runAIPipeline(step, valToUse, currentLead)
         const aiMsg = { role: 'ai' as const, message: aiResponse }
 
         setLocalHistory(prev => [...prev, aiMsg])
@@ -187,6 +187,39 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                     {displayedHistory.map((msg, idx) => (
                         <MessageBubble key={idx} role={msg.role} message={msg.message} />
                     ))}
+
+                    {/* Boutons d'options directement dans le flux du chat */}
+                    {!isThinking && step === 'contract' && (
+                        <div className="flex flex-wrap gap-2 pt-2 pb-2 pl-12 animate-in fade-in slide-in-from-left-4 duration-500">
+                            {['CDI', 'CDD', 'Alternance', 'Indépendant', 'Autre'].map((type) => (
+                                <button
+                                    key={type}
+                                    onClick={() => handleSend(type)}
+                                    className="px-4 py-2 bg-white border-2 border-primary/10 rounded-xl text-xs sm:text-sm font-bold text-primary hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm active:scale-95"
+                                >
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {!isThinking && step === 'guarantor' && (
+                        <div className="flex gap-2 pt-2 pb-2 pl-12 animate-in fade-in slide-in-from-left-4 duration-500">
+                            <button
+                                onClick={() => handleSend(t('chat_yes'))}
+                                className="px-8 py-2 bg-white border-2 border-green-100 rounded-xl text-xs sm:text-sm font-bold text-green-600 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all shadow-sm active:scale-95"
+                            >
+                                {t('chat_yes')}
+                            </button>
+                            <button
+                                onClick={() => handleSend(t('chat_no'))}
+                                className="px-8 py-2 bg-white border-2 border-red-100 rounded-xl text-xs sm:text-sm font-bold text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shadow-sm active:scale-95"
+                            >
+                                {t('chat_no')}
+                            </button>
+                        </div>
+                    )}
+
                     {isThinking && (
                         <div className="flex justify-start">
                             <div className="bg-white/80 backdrop-blur-md border border-primary/10 py-3 px-5 rounded-2xl rounded-tl-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center gap-3 animate-in fade-in zoom-in-95 duration-300">
@@ -202,41 +235,6 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                 </div>
 
                 <div className="p-4 md:p-6 border-t border-border/50 bg-white/50 backdrop-blur-sm relative">
-                    {/* Boutons d'options déportés au-dessus de la barre de saisie */}
-                    {!isThinking && step === 'contract' && (
-                        <div className="flex flex-wrap gap-2 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            {['CDI', 'CDD', 'Alternance', 'Indépendant', 'Autre'].map((type) => (
-                                <button
-                                    key={type}
-                                    onClick={() => {
-                                        setInput(type);
-                                        setTimeout(() => document.getElementById('chat-send-btn')?.click(), 50);
-                                    }}
-                                    className="px-4 py-2 bg-white border-2 border-primary/10 rounded-xl text-sm font-bold text-primary hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm hover:shadow-md active:scale-95"
-                                >
-                                    {type}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-
-                    {!isThinking && step === 'guarantor' && (
-                        <div className="flex gap-2 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <button
-                                onClick={() => { setInput(t('chat_yes')); setTimeout(() => document.getElementById('chat-send-btn')?.click(), 50); }}
-                                className="px-8 py-2 bg-white border-2 border-green-100 rounded-xl text-sm font-bold text-green-600 hover:bg-green-600 hover:text-white hover:border-green-600 transition-all shadow-sm hover:shadow-md active:scale-95"
-                            >
-                                {t('chat_yes')}
-                            </button>
-                            <button
-                                onClick={() => { setInput(t('chat_no')); setTimeout(() => document.getElementById('chat-send-btn')?.click(), 50); }}
-                                className="px-8 py-2 bg-white border-2 border-red-100 rounded-xl text-sm font-bold text-red-600 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all shadow-sm hover:shadow-md active:scale-95"
-                            >
-                                {t('chat_no')}
-                            </button>
-                        </div>
-                    )}
-
                     <div className="flex gap-2 relative">
                         <input
                             type="text"
@@ -253,7 +251,7 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                         />
                         <button
                             id="chat-send-btn"
-                            onClick={handleSend}
+                            onClick={() => handleSend()}
                             disabled={!input.trim() || isThinking}
                             className="p-3 md:p-4 bg-primary text-white rounded-2xl hover:bg-primary-hover shadow-lg shadow-primary/20 transition-all active:scale-95"
                         >
