@@ -96,9 +96,19 @@ export function ChatWindow({ leadId, standalone = false }: { leadId?: string; st
                     break
 
                 case 'contract':
-                    const contract = lowerInput.includes('cdi') || lowerInput.includes('permanent') ? 'CDI' :
-                        lowerInput.includes('cdd') || lowerInput.includes('fixed') ? 'CDD' :
-                            lowerInput.includes('indep') || lowerInput.includes('free') || lowerInput.includes('auto') ? 'Indépendant' : null
+                    // Détection améliorée du type de contrat
+                    let contract: 'CDI' | 'CDD' | 'Indépendant' | null = null
+
+                    if (lowerInput.includes('cdi') || lowerInput.includes('permanent') || lowerInput.includes('indéterminé') || lowerInput.includes('indefini')) {
+                        contract = 'CDI'
+                    } else if (lowerInput.includes('cdd') || lowerInput.includes('fixed') || lowerInput.includes('déterminé') || lowerInput.includes('determine') || lowerInput.includes('contrat court') || lowerInput.includes('temporaire')) {
+                        contract = 'CDD'
+                    } else if (lowerInput.includes('indep') || lowerInput.includes('free') || lowerInput.includes('auto') || lowerInput.includes('entrepreneur') || lowerInput.includes('freelance') || lowerInput.includes('consultant')) {
+                        contract = 'Indépendant'
+                    } else if (lowerInput.includes('altern') || lowerInput.includes('apprentice') || lowerInput.includes('stage') || lowerInput.includes('intern') || lowerInput.includes('étudiant') || lowerInput.includes('student')) {
+                        // On accepte aussi les alternants/stagiaires comme CDD
+                        contract = 'CDD'
+                    }
 
                     if (!contract) {
                         aiResponse = t('chat_contract_error')
