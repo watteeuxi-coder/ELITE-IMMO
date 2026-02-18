@@ -27,6 +27,7 @@ export default function SettingsPage() {
     const [formData, setFormData] = useState(userProfile)
     const [showSuccess, setShowSuccess] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
+    const fileInputRef = React.useRef<HTMLInputElement>(null)
 
     useEffect(() => {
         setFormData(userProfile)
@@ -34,7 +35,6 @@ export default function SettingsPage() {
 
     const handleSave = async () => {
         setIsSaving(true)
-        // Simulate a small delay for premium feel
         await new Promise(resolve => setTimeout(resolve, 800))
         updateProfile(formData)
         setIsSaving(false)
@@ -42,8 +42,33 @@ export default function SettingsPage() {
         setTimeout(() => setShowSuccess(false), 3000)
     }
 
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click()
+    }
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onloadend = () => {
+                const base64String = reader.result as string
+                setFormData({ ...formData, avatar: base64String })
+            }
+            reader.readAsDataURL(file)
+        }
+    }
+
     return (
         <div className="max-w-5xl mx-auto space-y-8 pb-20 animate-in fade-in duration-700">
+            {/* Hidden File Input */}
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+            />
+
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-4xl font-black tracking-tight mb-2 text-foreground">
@@ -79,8 +104,8 @@ export default function SettingsPage() {
                 {/* Profile Card */}
                 <div className="lg:col-span-1">
                     <div className="glass p-8 rounded-[2.5rem] flex flex-col items-center text-center space-y-6">
-                        <div className="relative group">
-                            <div className="w-32 h-32 rounded-[2rem] bg-gradient-to-tr from-[#7084FF] to-[#9D4EDD] flex items-center justify-center p-1">
+                        <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
+                            <div className="w-32 h-32 rounded-[2rem] bg-gradient-to-tr from-[#7084FF] to-[#9D4EDD] flex items-center justify-center p-1 hover:scale-105 transition-transform duration-300">
                                 <div className="w-full h-full rounded-[1.8rem] bg-white flex items-center justify-center overflow-hidden">
                                     {formData.avatar ? (
                                         <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover" />
@@ -91,7 +116,7 @@ export default function SettingsPage() {
                                     )}
                                 </div>
                             </div>
-                            <button className="absolute bottom-1 right-1 p-3 bg-white border border-border rounded-xl shadow-lg hover:scale-110 transition-all text-[#7084FF]">
+                            <button className="absolute bottom-1 right-1 p-3 bg-white border border-border rounded-xl shadow-lg hover:scale-110 transition-all text-[#7084FF] z-10">
                                 <Camera className="w-4 h-4" />
                             </button>
                         </div>
@@ -111,7 +136,7 @@ export default function SettingsPage() {
                             </div>
                             <div className="flex items-center justify-between text-sm">
                                 <span className="text-muted-foreground">Membre depuis</span>
-                                <span className="font-bold text-foreground">Janvier 2026</span>
+                                <span className="font-bold text-foreground">{formData.joinedAt}</span>
                             </div>
                         </div>
                     </div>
@@ -208,49 +233,32 @@ export default function SettingsPage() {
                         </div>
                     </div>
 
-                    {/* Security */}
-                    <div className="glass p-8 rounded-[2.5rem] space-y-8">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-green-100 flex items-center justify-center text-green-500">
-                                <Shield className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-foreground">Sécurité</h2>
-                                <p className="text-xs text-muted-foreground">Gérez la protection de vos données.</p>
-                            </div>
-                        </div>
+                </div>
 
-                        <button className="w-full py-4 bg-white border border-border rounded-2xl font-bold text-sm hover:bg-secondary/30 transition-all flex items-center justify-center gap-2">
-                            <Shield className="w-4 h-4" />
-                            Changer mon mot de passe
-                        </button>
+                {/* Danger Zone */}
+                <div className="glass p-8 rounded-[2.5rem] border-red-100 border-2 space-y-8">
+                    <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-red-500">
+                            <ShieldAlert className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-red-600">{t('settings_admin_title') || 'Zone de Danger (Admin)'}</h2>
+                            <p className="text-xs text-muted-foreground">Actions irréversibles sur la base de données.</p>
+                        </div>
                     </div>
 
-                    {/* Danger Zone */}
-                    <div className="glass p-8 rounded-[2.5rem] border-red-100 border-2 space-y-8">
-                        <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-red-500">
-                                <ShieldAlert className="w-6 h-6" />
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-red-600">{t('settings_admin_title') || 'Zone de Danger (Admin)'}</h2>
-                                <p className="text-xs text-muted-foreground">Actions irréversibles sur la base de données.</p>
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={async () => {
-                                if (window.confirm(t('settings_reset_confirm'))) {
-                                    await useStore.getState().resetDatabase();
-                                    window.location.href = '/';
-                                }
-                            }}
-                            className="w-full py-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl font-bold text-sm hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2"
-                        >
-                            <RefreshCw className="w-4 h-4" />
-                            {t('settings_reset_db') || 'Réinitialiser la base de données'}
-                        </button>
-                    </div>
+                    <button
+                        onClick={async () => {
+                            if (window.confirm(t('settings_reset_confirm'))) {
+                                await useStore.getState().resetDatabase();
+                                window.location.href = '/';
+                            }
+                        }}
+                        className="w-full py-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl font-bold text-sm hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                        {t('settings_reset_db') || 'Réinitialiser la base de données'}
+                    </button>
                 </div>
             </div>
         </div>

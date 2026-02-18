@@ -152,7 +152,11 @@ export function Sidebar() {
                     </button>
                     <div className="flex items-center gap-3 px-2 py-4 mt-2">
                         <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border border-border overflow-hidden">
-                            <CircleUser className="w-6 h-6 text-muted-foreground" />
+                            {userProfile.avatar ? (
+                                <img src={userProfile.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                                <CircleUser className="w-6 h-6 text-muted-foreground" />
+                            )}
                         </div>
                         <div className="flex flex-col">
                             <span className="text-sm font-semibold text-foreground">{userProfile.name}</span>

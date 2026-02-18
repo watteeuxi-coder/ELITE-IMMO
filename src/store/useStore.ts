@@ -49,6 +49,7 @@ export interface UserProfile {
     email: string;
     role: string;
     avatar?: string;
+    joinedAt: string;
 }
 
 interface EliteStore {
@@ -81,6 +82,7 @@ interface EliteStore {
     // User Profile
     userProfile: UserProfile;
     updateProfile: (profile: Partial<UserProfile>) => void;
+    loadProfile: () => void;
 }
 
 export const useStore = create<EliteStore>((set, get) => ({
@@ -92,11 +94,26 @@ export const useStore = create<EliteStore>((set, get) => ({
     userProfile: {
         name: 'Agent Elite',
         email: 'agent@elite-immo.fr',
-        role: 'Consultant Senior'
+        role: 'Consultant Senior',
+        joinedAt: 'Janvier 2026'
     },
-    updateProfile: (profile) => set((state) => ({
-        userProfile: { ...state.userProfile, ...profile }
-    })),
+    updateProfile: (profile) => {
+        set((state) => {
+            const newUserProfile = { ...state.userProfile, ...profile };
+            localStorage.setItem('elite_user_profile', JSON.stringify(newUserProfile));
+            return { userProfile: newUserProfile };
+        });
+    },
+    loadProfile: () => {
+        const saved = localStorage.getItem('elite_user_profile');
+        if (saved) {
+            try {
+                set({ userProfile: JSON.parse(saved) });
+            } catch (e) {
+                console.error("Error parsing user profile", e);
+            }
+        }
+    },
     toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
     setSidebarOpen: (open) => set({ isSidebarOpen: open }),
 

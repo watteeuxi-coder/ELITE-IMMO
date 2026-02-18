@@ -9,12 +9,13 @@ import { LanguageSelector } from './LanguageSelector'
 import { useStore } from '../../store/useStore'
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
-    const { subscribeToLeads, subscribeToNotifications } = useStore()
+    const { subscribeToLeads, subscribeToNotifications, loadProfile } = useStore()
 
     React.useEffect(() => {
+        loadProfile()
         subscribeToLeads()
         subscribeToNotifications()
-    }, [subscribeToLeads, subscribeToNotifications])
+    }, [subscribeToLeads, subscribeToNotifications, loadProfile])
 
     const pathname = usePathname()
     const isStandalone = pathname === '/candidature'
