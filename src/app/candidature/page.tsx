@@ -95,12 +95,25 @@ export default function CandidaturePage() {
                     <div className="w-14 h-14 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-[#7084FF] to-[#9D4EDD] flex items-center justify-center shadow-xl shadow-primary/20">
                         <Sparkles className="w-8 h-8 md:w-7 md:h-7 text-white" />
                     </div>
-                    <div>
+                    <div className="flex-1">
                         <h1 className="text-3xl md:text-2xl font-black bg-gradient-to-r from-[#7084FF] to-[#9D4EDD] bg-clip-text text-transparent tracking-tight">
                             {language === 'fr' ? 'Elite-Immo' : 'Elite-Real Estate'}
                         </h1>
                         <p className="text-sm md:text-base font-bold text-muted-foreground">{t('chat_dossier_subtitle')}</p>
                     </div>
+                    {currentLeadId && (
+                        <button
+                            onClick={() => {
+                                if (window.confirm(t('chat_reset_confirm'))) {
+                                    localStorage.removeItem('elite_current_lead_id');
+                                    window.location.reload();
+                                }
+                            }}
+                            className="px-4 py-2 text-xs font-bold text-primary/40 hover:text-primary transition-colors uppercase tracking-widest border border-primary/10 hover:border-primary/30 rounded-xl"
+                        >
+                            {t('chat_reset_session')}
+                        </button>
+                    )}
                 </div>
             </div>
 

@@ -15,7 +15,9 @@ import {
     Camera,
     Save,
     BadgeCheck,
-    Globe
+    Globe,
+    ShieldAlert,
+    RefreshCw
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
@@ -221,6 +223,32 @@ export default function SettingsPage() {
                         <button className="w-full py-4 bg-white border border-border rounded-2xl font-bold text-sm hover:bg-secondary/30 transition-all flex items-center justify-center gap-2">
                             <Shield className="w-4 h-4" />
                             Changer mon mot de passe
+                        </button>
+                    </div>
+
+                    {/* Danger Zone */}
+                    <div className="glass p-8 rounded-[2.5rem] border-red-100 border-2 space-y-8">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center text-red-500">
+                                <ShieldAlert className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-red-600">{t('settings_admin_title') || 'Zone de Danger (Admin)'}</h2>
+                                <p className="text-xs text-muted-foreground">Actions irréversibles sur la base de données.</p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={async () => {
+                                if (window.confirm(t('settings_reset_confirm'))) {
+                                    await useStore.getState().resetDatabase();
+                                    window.location.href = '/';
+                                }
+                            }}
+                            className="w-full py-4 bg-red-50 border border-red-200 text-red-600 rounded-2xl font-bold text-sm hover:bg-red-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            {t('settings_reset_db') || 'Réinitialiser la base de données'}
                         </button>
                     </div>
                 </div>

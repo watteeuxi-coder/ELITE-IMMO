@@ -162,6 +162,8 @@ const translations: Record<Language, Record<string, string>> = {
         chat_phone_error: "Le numéro de téléphone ne semble pas valide. Pourriez-vous le confirmer ?",
         chat_email: "Email",
         chat_phone: "Téléphone",
+        chat_reset_session: "Recommencer la candidature",
+        chat_reset_confirm: "Voulez-vous vraiment recommencer ? Votre progression actuelle sera perdue.",
 
         // Common
         common_new: "Nouveau",
@@ -332,6 +334,8 @@ const translations: Record<Language, Record<string, string>> = {
         chat_phone_error: "This phone number doesn't seem valid. Could you please confirm it?",
         chat_email: "Email",
         chat_phone: "Phone",
+        chat_reset_session: "Restart Application",
+        chat_reset_confirm: "Are you sure you want to restart? Your current progress will be lost.",
 
         // Settings
         settings_title: "Settings",

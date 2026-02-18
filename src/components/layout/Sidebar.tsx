@@ -136,6 +136,20 @@ export function Sidebar() {
                         <Settings className="w-5 h-5" />
                         <span className="font-bold text-sm">{t('side_settings')}</span>
                     </Link>
+
+                    {/* Reset Database Button - Visible for agencies demo */}
+                    <button
+                        onClick={async () => {
+                            if (window.confirm(t('settings_reset_confirm'))) {
+                                await useStore.getState().resetDatabase();
+                                window.location.href = '/';
+                            }
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 w-full rounded-xl transition-all cursor-pointer text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors mt-1"
+                    >
+                        <RefreshCw className="w-5 h-5" />
+                        <span className="font-bold text-sm">{t('side_reset')}</span>
+                    </button>
                     <div className="flex items-center gap-3 px-2 py-4 mt-2">
                         <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border border-border overflow-hidden">
                             <CircleUser className="w-6 h-6 text-muted-foreground" />
